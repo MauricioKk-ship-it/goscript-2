@@ -72,8 +72,9 @@ Node* create_unary_op(char op, Node* right) {
     Node* node = (Node*)allocate(sizeof(Node));
     node->type = NODE_UNARY_OP;
     node->data.binary.op = op;
+    node->left = NULL;
     node->right = right;
-    node->left = node->extra = NULL;
+    node->extra = NULL;
     return node;
 }
 
@@ -119,22 +120,6 @@ Node* create_print(Node* expr) {
     return node;
 }
 
-Node* create_getlf(Node* expr) {
-    Node* node = (Node*)allocate(sizeof(Node));
-    node->type = NODE_GETLF_STMT;
-    node->left = expr;
-    node->right = node->extra = NULL;
-    return node;
-}
-
-Node* create_input(const char* prompt) {
-    Node* node = (Node*)allocate(sizeof(Node));
-    node->type = NODE_INPUT_STMT;
-    node->data.string_value = copy_string(prompt ? prompt : "");
-    node->left = node->right = node->extra = NULL;
-    return node;
-}
-
 Node* create_if(Node* condition, Node* then_branch, Node* else_branch) {
     Node* node = (Node*)allocate(sizeof(Node));
     node->type = NODE_IF_STMT;
@@ -153,20 +138,18 @@ Node* create_while(Node* condition, Node* body) {
     return node;
 }
 
-Node* create_for(Node* initializer, Node* condition, Node* increment, Node* body) {
+Node* create_for(Node* init, Node* cond, Node* incr, Node* body) {
     Node* node = (Node*)allocate(sizeof(Node));
     node->type = NODE_FOR_STMT;
-    node->left = initializer;
-    node->right = condition;
+    node->left = init;
+    node->right = cond;
     
-    // Créer un noeud spécial pour contenir l'incrément et le corps
-    Node* for_body = (Node*)allocate(sizeof(Node));
-    for_body->type = NODE_BLOCK; // On réutilise le type BLOCK
-    for_body->left = body;
-    for_body->right = increment;
-    for_body->extra = NULL;
+    // On utilise un noeud intermédiaire pour l'incrément et le corps
+    Node* extra = (Node*)allocate(sizeof(Node));
+    extra->left = body;
+    extra->right = incr;
+    node->extra = extra;
     
-    node->extra = for_body;
     return node;
 }
 
@@ -175,8 +158,8 @@ Node* create_function(const char* name, Node* params, Node* body) {
     node->type = NODE_FUNCTION_DECL;
     node->data.identifier = copy_string(name);
     node->left = params;
-    node->right = body;
-    node->extra = NULL;
+    node->extra = body; // CRITIQUE: On stocke le corps dans extra pour libérer 'right'
+    node->right = NULL; 
     return node;
 }
 
@@ -199,27 +182,11 @@ Node* create_return(Node* value) {
 
 void free_ast(Node* node) {
     if (node == NULL) return;
-    
-    // Libérer les données selon le type
-    switch (node->type) {
-        case NODE_LITERAL_STRING:
-        case NODE_INPUT_STMT:
-            if (node->data.string_value) free(node->data.string_value);
-            break;
-        case NODE_VARIABLE:
-        case NODE_VARIABLE_DECL:
-        case NODE_ASSIGNMENT:
-        case NODE_FUNCTION_DECL:
-        case NODE_FUNCTION_CALL:
-            if (node->data.identifier) free(node->data.identifier);
-            break;
-        default:
-            break;
-    }
-    
-    // Libérer récursivement
     free_ast(node->left);
     free_ast(node->right);
     free_ast(node->extra);
+    if (node->type == NODE_VARIABLE || node->type == NODE_FUNCTION_DECL || node->type == NODE_VARIABLE_DECL) {
+        if (node->data.identifier) free(node->data.identifier);
+    }
     free(node);
 }
