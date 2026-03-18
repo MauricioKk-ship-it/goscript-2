@@ -1,6 +1,6 @@
 /*
 ** goscript - Un interpréteur Lisp moderne inspiré de Rust
-** Copyright (c) 2026 Mauricio Mangituka
+** Copyright (c) 2024 Mauricio Mangituka
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -46,17 +46,6 @@ struct gs_Object {
     gs_Value car;
     gs_Value cdr;
 };
-// Ajouter cette structure et fonction en haut du fichier, après les includes
-struct StringReader {
-    const char *p;
-};
-
-static char string_read_char(gs_Context *ctx, void *udata) {
-    (void)ctx;
-    struct StringReader *r = (struct StringReader*)udata;
-    return *r->p ? *r->p++ : EOF;
-}
-
 
 // Marqueur de bit pour le GC
 #define GC_MARK_BIT 0x2
@@ -138,7 +127,7 @@ static const char *type_names[] = {
 };
 
 // ----------------------------------------------------------------------------
-// Gestion des erreurs (maintenant avec formatage)
+// Gestion des erreurs
 // ----------------------------------------------------------------------------
 
 __attribute__((noreturn))
@@ -529,6 +518,18 @@ static char default_read_char(gs_Context *ctx, void *udata) {
     return fgetc((FILE*)udata);
 }
 
+// Structure pour la lecture depuis une chaîne
+typedef struct {
+    const char *p;
+} StringReader;
+
+static char string_read_char(gs_Context *ctx, void *udata) {
+    (void)ctx;
+    StringReader *r = (StringReader*)udata;
+    if (!r->p || !*r->p) return EOF;
+    return *r->p++;
+}
+
 static int is_delimiter(int c) {
     return isspace(c) || c == '(' || c == ')' || c == ';' || c == '"' || c == '\'' || c == EOF;
 }
@@ -699,18 +700,9 @@ gs_Object* gs_read(gs_Context *ctx, char (*read_fn)(gs_Context*, void*), void *u
 }
 
 gs_Object* gs_read_string(gs_Context *ctx, const char *input) {
-    struct StringReader reader;
+    StringReader reader;
     reader.p = input;
     return gs_read(ctx, string_read_char, &reader);
-}
-    
-    char read_char(gs_Context *ctx, void *udata) {
-        (void)ctx;
-        struct StringReader *r = udata;
-        return *r->p ? *r->p++ : EOF;
-    }
-    
-    return gs_read(ctx, read_char, &reader);
 }
 
 gs_Object* gs_read_file(gs_Context *ctx, FILE *fp) {
@@ -1068,7 +1060,7 @@ static gs_Object* eval(gs_Context *ctx, gs_Object *obj, gs_Object *env, gs_Objec
                 case PRIM_PRINT: {
                     // (print ...)
                     if (ctx->handlers.print) {
-                        char buf[1024];
+                        char buf[4096];
                         gs_write_string(ctx, args, buf, sizeof(buf));
                         ctx->handlers.print(ctx, buf);
                     }
@@ -1478,13 +1470,14 @@ static void default_error_handler(gs_Context *ctx, const char *msg, gs_Object *c
 
 static void silent_print(gs_Context *ctx, const char *msg) {
     (void)ctx;
-    // Interpréteur silencieux - ne rien imprimer
-    // Mais on peut décommenter pour le debug
+    // Interpréteur silencieux - ne rien imprimer sauf si demandé
+    // Pour activer l'impression, décommentez la ligne suivante :
     // printf("%s\n", msg);
 }
 
 int main(int argc, char **argv) {
-    char memory[256 * 1024]; // 256KB devrait suffire
+    // Allouer 256KB pour le contexte et les objets
+    static char memory[256 * 1024];
     gs_Context *ctx = gs_open(memory, sizeof(memory));
     
     if (!ctx) {
@@ -1501,17 +1494,20 @@ int main(int argc, char **argv) {
         FILE *fp = fopen(argv[1], "r");
         if (!fp) {
             fprintf(stderr, "Cannot open file: %s\n", argv[1]);
+            gs_close(ctx);
             return 1;
         }
         
         gs_eval_file(ctx, fp);
         fclose(fp);
     } else {
-        // Mode REPL silencieux (pas de prompt, pas de sortie)
+        // Mode REPL silencieux
         char line[4096];
-        while (fgets(line, sizeof(line), stdin)) {
+        while (1) {
+            if (fgets(line, sizeof(line), stdin) == NULL) {
+                break;
+            }
             gs_eval_string(ctx, line);
-            // Pas de sortie - interpréteur silencieux
         }
     }
     
