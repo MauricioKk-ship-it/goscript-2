@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../src/fe.h"
+#include "../src/gsc.h"
 
 /* (fs/read-file "path") */
 static fe_Object* f_fs_read(fe_Context *ctx, fe_Object *args) {
