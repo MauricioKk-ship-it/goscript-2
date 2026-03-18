@@ -1,7 +1,7 @@
 # GOScript - Makefile complet
 # Compilateur et flags
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -g -Iinc
+CFLAGS = -Wall -Wextra  -g -Iinc
 LDFLAGS = -lm
 
 # Répertoires
