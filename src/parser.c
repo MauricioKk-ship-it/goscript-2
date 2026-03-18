@@ -353,6 +353,7 @@ static Node* statement() {
     if (match(TOKEN_WHILE)) return while_statement();
     if (match(TOKEN_FOR)) return for_statement();
     if (match(TOKEN_RETURN)) return return_statement();
+    if (match(TOKEN_RN)) return return_statement(); 
     if (match(TOKEN_USE)) return import_statement();
     if (match(TOKEN_LBRACE)) return block_statement();
     
