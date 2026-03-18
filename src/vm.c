@@ -212,12 +212,21 @@ static double evaluate(VM* vm, Node* node) {
             }
         }
         
-        case NODE_FUNCTION_CALL: {
-            execute_statement(vm, node);
-            if (vm->stack_top > 0) {
-                return pop(vm);
-            }
-            return 0;
+// Dans la fonction evaluate(), modifie le case NODE_FUNCTION_CALL :
+
+case NODE_FUNCTION_CALL: {
+    // Sauvegarder l'état actuel
+    int old_stack_top = vm->stack_top;
+    
+    // Exécuter l'appel de fonction
+    execute_statement(vm, node);
+    
+    // Récupérer la valeur retournée (si elle existe)
+    if (vm->stack_top > old_stack_top) {
+        return pop(vm);
+    }
+    return 0;
+}
         }
         
         default:
