@@ -103,6 +103,24 @@ static TokenType identifier_type() {
                 }
             }
             break;
+        case 'r':
+            if (scanner.current - scanner.start > 1) {
+                switch (scanner.start[1]) {
+                    case 'n':  // <---  important
+                        if (scanner.current - scanner.start == 2) {
+                            return TOKEN_RN;  // "rn"
+                        }
+                        break;
+                    case 'e':
+                        if (scanner.current - scanner.start > 2) {
+                            if (strncmp(scanner.start, "return", 6) == 0) {
+                                return TOKEN_RETURN;  // garder "return" aussi
+                            }
+                        }
+                        break;
+                }
+            }
+            break;
         case 'c':
             if (scanner.current - scanner.start > 1) {
                 switch (scanner.start[1]) {
