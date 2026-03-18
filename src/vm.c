@@ -393,14 +393,14 @@ static void execute_statement(VM* vm, Node* node) {
         }
         
         case NODE_RETURN_STMT: {
-            if (node->left) {
-                vm->return_value = evaluate(vm, node->left);
-            } else {
-                vm->return_value = 0;
-            }
-            vm->return_flag = true;
-            break;
-        }
+    if (node->left) {
+        vm->return_value = evaluate(vm, node->left);
+    } else {
+        vm->return_value = 0;
+    }
+    vm->return_flag = true;
+    break;
+}
         
         case NODE_FUNCTION_DECL: {
             // Store function in VM
