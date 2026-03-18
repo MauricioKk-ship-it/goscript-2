@@ -130,6 +130,11 @@ static const char *type_names[] = {
 // Gestion des erreurs (maintenant avec formatage)
 // ----------------------------------------------------------------------------
 
+
+/*
+** Gestion des erreurs avec formatage
+** Tous les messages d'erreur sont en anglais
+*/
 __attribute__((noreturn))
 void gs_error(gs_Context *ctx, const char *format, ...) {
     va_list args;
@@ -158,6 +163,14 @@ void gs_error(gs_Context *ctx, const char *format, ...) {
     }
     
     exit(EXIT_FAILURE);
+}
+
+// Renommer l'ancienne fonction gs_object_error en gs_make_error
+gs_Object* gs_make_error(gs_Context *ctx, const char *msg) {
+    gs_Object *obj = allocate_object(ctx);
+    obj_set_tag(obj, GS_T_ERROR);
+    obj_cdr(obj) = gs_string(ctx, msg);
+    return obj;
 }
 
 // ----------------------------------------------------------------------------
