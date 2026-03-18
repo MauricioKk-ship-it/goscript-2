@@ -1,6 +1,6 @@
 /*
 ** goscript - Un interpréteur Lisp moderne inspiré de Rust
-** Copyright (c) 2024 Mauricio Mangituka
+** Copyright (c) 2026 Mauricio Mangituka
 **
 ** Permission is hereby granted, free of charge, to any person obtaining a copy
 ** of this software and associated documentation files (the "Software"), to deal
@@ -130,11 +130,6 @@ static const char *type_names[] = {
 // Gestion des erreurs (maintenant avec formatage)
 // ----------------------------------------------------------------------------
 
-
-/*
-** Gestion des erreurs avec formatage
-** Tous les messages d'erreur sont en anglais
-*/
 __attribute__((noreturn))
 void gs_error(gs_Context *ctx, const char *format, ...) {
     va_list args;
@@ -163,14 +158,6 @@ void gs_error(gs_Context *ctx, const char *format, ...) {
     }
     
     exit(EXIT_FAILURE);
-}
-
-// Renommer l'ancienne fonction gs_object_error en gs_make_error
-gs_Object* gs_make_error(gs_Context *ctx, const char *msg) {
-    gs_Object *obj = allocate_object(ctx);
-    obj_set_tag(obj, GS_T_ERROR);
-    obj_cdr(obj) = gs_string(ctx, msg);
-    return obj;
 }
 
 // ----------------------------------------------------------------------------
@@ -429,7 +416,7 @@ gs_Object* gs_ptr(gs_Context *ctx, void *ptr) {
     return obj;
 }
 
-gs_Object* gs_error(gs_Context *ctx, const char *msg) {
+gs_Object* gs_make_error(gs_Context *ctx, const char *msg) {
     gs_Object *obj = allocate_object(ctx);
     obj_set_tag(obj, GS_T_ERROR);
     obj_cdr(obj) = gs_string(ctx, msg);
@@ -1100,13 +1087,14 @@ static gs_Object* eval(gs_Context *ctx, gs_Object *obj, gs_Object *env, gs_Objec
                     result_obj = gs_symbol(ctx, type_names[object_type(EVAL_ARG())]);
                     break;
                     
-                case PRIM_ERROR:
+                case PRIM_ERROR: {
                     // (error msg)
                     a = EVAL_ARG();
                     char msg_buf[256];
                     gs_write_string(ctx, a, msg_buf, sizeof(msg_buf));
                     gs_error(ctx, "%s", msg_buf);
                     break;
+                }
                     
                 case PRIM_EVAL:
                     // (eval expr)
@@ -1269,16 +1257,17 @@ gs_Object* gs_eval(gs_Context *ctx, gs_Object *obj) {
     jmp_buf jmp;
     jmp_buf *old_jmp = ctx->error_jmp;
     ctx->error_jmp = &jmp;
+    gs_Object *result;
     
     if (setjmp(jmp) == 0) {
-        obj = eval(ctx, obj, ctx->global_env, NULL);
+        result = eval(ctx, obj, ctx->global_env, NULL);
     } else {
         // Une erreur est survenue
-        obj = gs_error(ctx, ctx->error_msg);
+        result = gs_make_error(ctx, ctx->error_msg);
     }
     
     ctx->error_jmp = old_jmp;
-    return obj;
+    return result;
 }
 
 gs_Object* gs_eval_string(gs_Context *ctx, const char *input) {
