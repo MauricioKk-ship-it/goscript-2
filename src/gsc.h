@@ -1,8 +1,8 @@
 /*
-** Copyright (c) 2020 rxi
+** Copyright (c) 2026 GOPUINC
 **
 ** This library is free software; you can redistribute it and/or modify it
-** under the terms of the MIT license. See `fe.c` for details.
+** under the terms of the MIT license. See `gsc.c` for details.
 */
 
 #ifndef FE_H
