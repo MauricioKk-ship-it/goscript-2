@@ -3,6 +3,7 @@
 #include <string.h>
 #include "fe.h"
 
+/* Cette fonction reste statique car elle n'est utilisée que dans ce fichier */
 static fe_Object* load_module(fe_Context *ctx, fe_Object *args, int is_local) {
   fe_Object *arg = fe_nextarg(ctx, &args);
   char path_buf[256];
@@ -15,28 +16,23 @@ static fe_Object* load_module(fe_Context *ctx, fe_Object *args, int is_local) {
 
   fe_tostring(ctx, arg, path_buf, sizeof(path_buf));
 
-  /* Parser le format : dossier/fichier::type::nom */
   first_sep = strstr(path_buf, "::");
   if (first_sep) {
-    char *rest, *last_sep, *temp;
+    char *last_sep, *temp;
     *first_sep = '\0'; 
-    
-    rest = first_sep + 2;
-    last_sep = rest;
+    last_sep = first_sep + 2;
     while ((temp = strstr(last_sep, "::")) != NULL) {
       last_sep = temp + 2;
     }
     strcpy(target_symbol, last_sep);
   }
 
-  /* Construire le chemin */
   if (is_local) {
     snprintf(file_path, sizeof(file_path), "./%s.fe", path_buf);
   } else {
     snprintf(file_path, sizeof(file_path), "/usr/local/lib/goscript/%s.fe", path_buf);
   }
 
-  /* Ouvrir et évaluer */
   fp = fopen(file_path, "rb");
   if (!fp) {
     char err[512];
@@ -54,6 +50,14 @@ static fe_Object* load_module(fe_Context *ctx, fe_Object *args, int is_local) {
   if (target_symbol[0] != '\0') {
     return fe_eval(ctx, fe_symbol(ctx, target_symbol));
   }
-
   return fe_bool(ctx, 1);
+}
+
+/* Ces fonctions NE DOIVENT PAS être static pour être vues par fe.c */
+fe_Object* f_use(fe_Context *ctx, fe_Object *args) {
+  return load_module(ctx, args, 0);
+}
+
+fe_Object* f_nm(fe_Context *ctx, fe_Object *args) {
+  return load_module(ctx, args, 1);
 }
