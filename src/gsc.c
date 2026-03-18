@@ -875,7 +875,7 @@ int main(int argc, char **argv) {
   /* re(p)l */
   for (;;) {
     fe_restoregc(ctx, gc);
-    if (fp == stdin) { printf("> "); }
+    if (fp == stdin) { printf("[::lock::]> "); }
     if (!(obj = fe_readfp(ctx, fp))) { break; }
     obj = fe_eval(ctx, obj);
     if (fp == stdin) { fe_writefp(ctx, obj, stdout); printf("\n"); }
