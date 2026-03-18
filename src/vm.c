@@ -10,7 +10,7 @@
 
 void init_vm(VM* vm) {
     vm->global_count = 0;
-    vm->global_capacity = 16; // Start with 16, grow as needed
+    vm->global_capacity = 16;
     vm->globals = (Value*)allocate(sizeof(Value) * vm->global_capacity);
     
     vm->stack_top = 0;
@@ -26,19 +26,12 @@ void init_vm(VM* vm) {
 }
 
 void free_vm(VM* vm) {
-    // Free global variables
     for (int i = 0; i < vm->global_count; i++) {
         if (vm->globals[i].name) free(vm->globals[i].name);
-        if (vm->globals[i].type == TYPE_STRING && vm->globals[i].value.string) {
-            free(vm->globals[i].value.string);
-        }
     }
     if (vm->globals) free(vm->globals);
-    
-    // Free stack
     if (vm->stack) free(vm->stack);
     
-    // Free functions
     Function* func = vm->functions;
     while (func) {
         Function* next = func->next;
@@ -54,7 +47,6 @@ void free_vm(VM* vm) {
 
 void push(VM* vm, double value) {
     if (vm->stack_top >= vm->stack_capacity) {
-        // Grow stack if needed
         vm->stack_capacity *= 2;
         vm->stack = (double*)realloc(vm->stack, sizeof(double) * vm->stack_capacity);
         if (!vm->stack) {
@@ -75,15 +67,6 @@ double pop(VM* vm) {
     return vm->stack[--vm->stack_top];
 }
 
-double peek(VM* vm, int distance) {
-    if (vm->stack_top - 1 - distance < 0) {
-        fprintf(stderr, "Error: Invalid stack access\n");
-        vm->had_error = true;
-        return 0;
-    }
-    return vm->stack[vm->stack_top - 1 - distance];
-}
-
 //------------------------------------------------------------------------------
 // Variable management
 //------------------------------------------------------------------------------
@@ -98,7 +81,6 @@ static void grow_globals(VM* vm) {
 }
 
 static Value* find_variable(VM* vm, const char* name) {
-    // Look in current frame first (for local variables)
     Frame* frame = vm->current_frame;
     while (frame) {
         for (int i = 0; i < frame->local_count; i++) {
@@ -109,7 +91,6 @@ static Value* find_variable(VM* vm, const char* name) {
         frame = frame->parent;
     }
     
-    // Then look in globals
     for (int i = 0; i < vm->global_count; i++) {
         if (strcmp(vm->globals[i].name, name) == 0) {
             return &vm->globals[i];
@@ -120,13 +101,8 @@ static Value* find_variable(VM* vm, const char* name) {
 }
 
 static void define_global(VM* vm, const char* name, Value value) {
-    // Check if already exists
     for (int i = 0; i < vm->global_count; i++) {
         if (strcmp(vm->globals[i].name, name) == 0) {
-            // Update existing
-            if (vm->globals[i].type == TYPE_STRING && vm->globals[i].value.string) {
-                free(vm->globals[i].value.string);
-            }
             vm->globals[i] = value;
             vm->globals[i].name = strdup(name);
             vm->globals[i].is_initialized = true;
@@ -134,7 +110,6 @@ static void define_global(VM* vm, const char* name, Value value) {
         }
     }
     
-    // Add new
     if (vm->global_count >= vm->global_capacity) {
         grow_globals(vm);
         if (vm->had_error) return;
@@ -149,15 +124,10 @@ static void define_global(VM* vm, const char* name, Value value) {
 static void set_variable(VM* vm, const char* name, Value value) {
     Value* var = find_variable(vm, name);
     if (var) {
-        // Free old string if needed
-        if (var->type == TYPE_STRING && var->value.string) {
-            free(var->value.string);
-        }
         *var = value;
-        var->name = strdup(name); // Keep name
+        var->name = strdup(name);
         var->is_initialized = true;
     } else {
-        // Not found, create as global
         define_global(vm, name, value);
     }
 }
@@ -189,10 +159,6 @@ static double evaluate(VM* vm, Node* node) {
             
         case NODE_LITERAL_BOOL:
             return node->data.bool_value ? 1.0 : 0.0;
-            
-        case NODE_LITERAL_STRING:
-            // For now, strings evaluate to 0
-            return 0;
             
         case NODE_VARIABLE: {
             Value val = get_variable(vm, node->data.identifier);
@@ -226,17 +192,26 @@ static double evaluate(VM* vm, Node* node) {
                         return 0;
                     }
                     return left / right;
-                case '=': return left == right ? 1.0 : 0.0;
-                case '!': return left != right ? 1.0 : 0.0;
-                case '<': return left < right ? 1.0 : 0.0;
-                case '>': return left > right ? 1.0 : 0.0;
-                case 'g': return left >= right ? 1.0 : 0.0; // >=
-                case 'l': return left <= right ? 1.0 : 0.0; // <=
+                case '=': return (left == right) ? 1.0 : 0.0;
+                case '!': return (left != right) ? 1.0 : 0.0;
+                case '<': return (left < right) ? 1.0 : 0.0;
+                case '>': return (left > right) ? 1.0 : 0.0;
+                case 'g': return (left >= right) ? 1.0 : 0.0;
+                case 'l': return (left <= right) ? 1.0 : 0.0;
                 default:
                     fprintf(stderr, "Error: Unknown operator %c\n", node->data.binary.op);
                     vm->had_error = true;
                     return 0;
             }
+        }
+        
+        case NODE_FUNCTION_CALL: {
+            // Push return value from function call
+            execute_statement(vm, node);
+            if (vm->stack_top > 0) {
+                return pop(vm);
+            }
+            return 0;
         }
         
         default:
@@ -277,7 +252,6 @@ static void execute_statement(VM* vm, Node* node) {
         case NODE_PRINT_STMT: {
             double value = evaluate(vm, node->left);
             if (!vm->had_error) {
-                // Print as integer if it's a whole number
                 if (value == (int)value) {
                     printf("%d\n", (int)value);
                 } else {
@@ -295,20 +269,6 @@ static void execute_statement(VM* vm, Node* node) {
                 } else {
                     printf("%g\n", value);
                 }
-            }
-            break;
-        }
-        
-        case NODE_INPUT_STMT: {
-            char buffer[256];
-            if (node->data.string_value && strlen(node->data.string_value) > 0) {
-                printf("%s", node->data.string_value);
-            }
-            if (fgets(buffer, sizeof(buffer), stdin)) {
-                buffer[strcspn(buffer, "\n")] = 0;
-                char* endptr;
-                double val = strtod(buffer, &endptr);
-                push(vm, val);
             }
             break;
         }
@@ -363,28 +323,23 @@ static void execute_statement(VM* vm, Node* node) {
         }
         
         case NODE_FOR_STMT: {
-            // Initializer
             if (node->left) {
                 execute_statement(vm, node->left);
             }
             
-            // The extra field contains a block with [body, increment]
             Node* for_extra = node->extra;
             
             while (!vm->had_error && !vm->return_flag) {
-                // Condition
                 double condition = 1.0;
                 if (node->right) {
                     condition = evaluate(vm, node->right);
                 }
                 if (condition == 0) break;
                 
-                // Body
                 if (for_extra && for_extra->left) {
                     execute_statement(vm, for_extra->left);
                 }
                 
-                // Increment
                 if (for_extra && for_extra->right) {
                     evaluate(vm, for_extra->right);
                 }
@@ -393,17 +348,16 @@ static void execute_statement(VM* vm, Node* node) {
         }
         
         case NODE_RETURN_STMT: {
-    if (node->left) {
-        vm->return_value = evaluate(vm, node->left);
-    } else {
-        vm->return_value = 0;
-    }
-    vm->return_flag = true;
-    break;
-}
+            if (node->left) {
+                vm->return_value = evaluate(vm, node->left);
+            } else {
+                vm->return_value = 0;
+            }
+            vm->return_flag = true;
+            break;
+        }
         
         case NODE_FUNCTION_DECL: {
-            // Store function in VM
             Function* func = (Function*)allocate(sizeof(Function));
             func->name = strdup(node->data.identifier);
             func->params = node->left;
@@ -414,79 +368,81 @@ static void execute_statement(VM* vm, Node* node) {
             break;
         }
         
-case NODE_FUNCTION_CALL: {
-    // Find function
-    Function* func = vm->functions;
-    while (func) {
-        if (strcmp(func->name, node->data.identifier) == 0) break;
-        func = func->next;
-    }
-    
-    if (!func) {
-        fprintf(stderr, "Error: Undefined function '%s'\n", node->data.identifier);
-        vm->had_error = true;
-        break;
-    }
-    
-    // Create new frame for local variables
-    Frame frame;
-    frame.locals = (Value*)allocate(sizeof(Value) * LOCALS_MAX);
-    frame.local_count = 0;
-    frame.parent = vm->current_frame;
-    
-    vm->current_frame = &frame;
-    
-    // Pass arguments
-    Node* arg = node->left;
-    Node* param = func->params;
-    
-    while (arg && param) {
-        double arg_value = evaluate(vm, arg);
-        
-        Value val;
-        val.type = TYPE_NUMBER;
-        val.value.number = arg_value;
-        val.is_initialized = true;
-        val.name = strdup(param->data.identifier);  // Ajouter le nom
-        
-        frame.locals[frame.local_count] = val;
-        frame.local_count++;
-        
-        arg = arg->right;
-        param = param->right;
-    }
-    
-    // Execute function body
-    vm->return_flag = false;
-    vm->return_value = 0;  // Initialiser la valeur de retour
-    execute_statement(vm, func->body);
-    
-    // Clean up frame
-    for (int i = 0; i < frame.local_count; i++) {
-        if (frame.locals[i].name) free(frame.locals[i].name);
-    }
-    free(frame.locals);
-    
-    vm->current_frame = frame.parent;
-    
-    // Push return value
-    if (vm->return_flag) {
-        push(vm, vm->return_value);
-        vm->return_flag = false;
-    } else {
-        push(vm, 0);
-    }
-    break;
-}
+        case NODE_FUNCTION_CALL: {
+            Function* func = vm->functions;
+            while (func) {
+                if (strcmp(func->name, node->data.identifier) == 0) break;
+                func = func->next;
+            }
+            
+            if (!func) {
+                fprintf(stderr, "Error: Undefined function '%s'\n", node->data.identifier);
+                vm->had_error = true;
+                break;
+            }
+            
+            // Save current return state
+            bool old_return_flag = vm->return_flag;
+            double old_return_value = vm->return_value;
+            
+            // Create new frame
+            Frame frame;
+            frame.locals = (Value*)allocate(sizeof(Value) * LOCALS_MAX);
+            frame.local_count = 0;
+            frame.parent = vm->current_frame;
+            
+            vm->current_frame = &frame;
+            
+            // Pass arguments
+            Node* arg = node->left;
+            Node* param = func->params;
+            
+            while (arg && param) {
+                double arg_value = evaluate(vm, arg);
+                
+                Value val;
+                val.type = TYPE_NUMBER;
+                val.value.number = arg_value;
+                val.is_initialized = true;
+                val.name = strdup(param->data.identifier);
+                
+                frame.locals[frame.local_count++] = val;
+                
+                arg = arg->right;
+                param = param->right;
+            }
+            
+            // Execute function
+            vm->return_flag = false;
+            vm->return_value = 0;
+            execute_statement(vm, func->body);
+            
+            // Get return value
+            double result = vm->return_value;
+            
+            // Clean up frame
+            for (int i = 0; i < frame.local_count; i++) {
+                if (frame.locals[i].name) free(frame.locals[i].name);
+            }
+            free(frame.locals);
+            
+            // Restore previous state
+            vm->current_frame = frame.parent;
+            vm->return_flag = old_return_flag;
+            vm->return_value = old_return_value;
+            
+            // Push result
+            push(vm, result);
+            break;
+        }
         
         default:
-            // Ignore other types
             break;
     }
 }
 
 //------------------------------------------------------------------------------
-// Main execution entry point
+// Main execution
 //------------------------------------------------------------------------------
 
 bool execute(VM* vm, Node* ast) {
@@ -494,6 +450,7 @@ bool execute(VM* vm, Node* ast) {
     
     vm->had_error = false;
     vm->return_flag = false;
+    vm->return_value = 0;
     
     execute_statement(vm, ast);
     
