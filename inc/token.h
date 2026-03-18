@@ -8,7 +8,7 @@ typedef enum {
     TOKEN_WHILE, TOKEN_FOR, TOKEN_RETURN,
     TOKEN_TRUE, TOKEN_FALSE, TOKEN_RN,
 
-    TOKEN_NIL, TOKEN_RETURN,                // pour evaluer la fôction rn 
+    TOKEN_NIL,               // pour evaluer la fôction rn 
     
     // Identifiants et valeurs
     TOKEN_IDENTIFIER, TOKEN_STRING, TOKEN_NUMBER,
