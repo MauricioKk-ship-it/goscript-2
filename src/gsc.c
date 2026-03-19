@@ -747,21 +747,19 @@ gs_Context* gs_open(void *ptr, int size) {
   ctx->gcstack_size = (size - (sizeof(gs_Context) + ctx->object_count * sizeof(gs_Object))) / sizeof(gs_Object*);
   ctx->gcstack_idx = 0;
   
-  /* Initialize nil and t */
-  static gs_Object nil_obj = { 
-    { (gs_Object*)GS_TNIL }, 
-    { (gs_Object*)GS_TNIL },
-    { { NULL, 0.0, NULL, 0 } }
-  };
+/* Initialize nil and t */
+  static gs_Object nil_obj;
+  memset(&nil_obj, 0, sizeof(gs_Object));
+  nil_obj.car.c = GS_TNIL;
+  nil_obj.cdr.o = NULL;
   ctx->nil = &nil_obj;
   
-  static gs_Object t_obj = { 
-    { (gs_Object*)GS_TSYMBOL }, 
-    { (gs_Object*)GS_TSYMBOL },
-    { { NULL, 0.0, NULL, 0 } }
-  };
+  static gs_Object t_obj;
+  memset(&t_obj, 0, sizeof(gs_Object));
+  t_obj.car.c = GS_TSYMBOL;
+  t_obj.cdr.o = NULL;
   strcpy(strbuf(&t_obj), "t");
-  ctx->t = &t_obj;
+  ctx->t = &t_obj;  
   
   ctx->symlist = ctx->nil;
   ctx->line = 1;
