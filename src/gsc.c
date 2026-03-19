@@ -749,52 +749,61 @@ static gs_Object* eval(gs_Context *ctx, gs_Object *obj, gs_Object *env) {
   return obj;
 }
 
-/* Context management */
 gs_Context* gs_open(void *ptr, int size) {
   gs_Context *ctx = (gs_Context*)ptr;
   memset(ctx, 0, sizeof(gs_Context));
+
+  /* 1. Configuration des limites de la pile du GC */
+  /* On réserve 2048 slots pour protéger les objets du Garbage Collector */
+  int gc_stack_slots = 2048; 
+  int gc_stack_bytes = gc_stack_slots * sizeof(gs_Object*);
   
-  /* Calculate object pool */
-  ctx->objects = (gs_Object*)((char*)ptr + sizeof(gs_Context));
-  ctx->object_count = (size - sizeof(gs_Context)) / sizeof(gs_Object);
+  /* 2. Calcul de l'espace pour le pool d'objets */
+  /* Espace total - (Header Context + Espace Pile GC) */
+  int usable_size = size - sizeof(gs_Context) - gc_stack_bytes;
   
-  /* Setup GC stack */
-  ctx->gcstack = (gs_Object**)&ctx->objects[ctx->object_count];
-  ctx->gcstack_size = (size - (sizeof(gs_Context) + ctx->object_count * sizeof(gs_Object))) / sizeof(gs_Object*);
-  ctx->gcstack_idx = 0;
-  
-/* Initialize nil and t */
-  static gs_Object nil_obj;
-  memset(&nil_obj, 0, sizeof(gs_Object));
-  nil_obj.car.c = GS_TNIL;
-  nil_obj.cdr.o = NULL;
-  ctx->nil = &nil_obj;
-  
-  static gs_Object t_obj;
-  memset(&t_obj, 0, sizeof(gs_Object));
-  t_obj.car.c = GS_TSYMBOL;
-  t_obj.cdr.o = NULL;
-  strcpy(strbuf(&t_obj), "t");
-  ctx->t = &t_obj;  
-  
-  ctx->symlist = ctx->nil;
-  ctx->line = 1;
-  
-  /* Register primitives */
-  for (int i = 0; i < P_MAX; i++) {
-    gs_Object *p = object(ctx);
-    settype(p, GS_TPRIM);
-    prim(p) = i;
-    gs_set(ctx, gs_symbol(ctx, primnames[i]), p);
+  if (usable_size <= 0) {
+    fprintf(stderr, "Fatal: Memory block too small\n");
+    exit(1);
   }
+
+  ctx->object_count = usable_size / sizeof(gs_Object);
+  ctx->objects = (gs_Object*)((char*)ptr + sizeof(gs_Context));
+
+  /* 3. Placement de la pile du GC juste après les objets */
+  ctx->gcstack = (gs_Object**)(&ctx->objects[ctx->object_count]);
+  ctx->gcstack_max = gc_stack_slots;
+  ctx->gcstack_idx = 0;
+
+  /* 4. Initialisation critique : marquer tous les objets comme LIBRES */
+  for (int i = 0; i < ctx->object_count; i++) {
+    settype(&ctx->objects[i], GS_TFREE);
+  }
+
+  /* 5. Initialisation des constantes de base du langage */
+  /* On crée l'objet NIL en premier */
+  ctx->nil = object(ctx);
+  settype(ctx->nil, GS_TNIL);
   
-  /* Initialize modules if available */
+  /* On crée le symbole 't' pour TRUE */
+  ctx->t = gs_symbol(ctx, "t");
+
+  /* 6. Initialisation des handlers par défaut */
+  ctx->handlers.error = NULL; /* Utilise gs_error par défaut */
+  
+  /* 7. Chargement des fonctions natives (primitives) */
+  /* (Ici tu appelles tes fonctions qui enregistrent print, +, -, etc.) */
+  /* Par exemple : */
+  /* register_primitives(ctx); */
+
   #ifdef GS_HAVE_FS
-  fs_init(ctx);
+  /* Si tu as compilé avec le module fs.c */
+  /* fs_init(ctx); */
   #endif
   
   return ctx;
 }
+
 
 void gs_close(gs_Context *ctx) {
   /* Nothing to do for now */
