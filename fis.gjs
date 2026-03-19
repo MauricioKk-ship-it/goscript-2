@@ -1,8 +1,6 @@
-;; Importation locale
-(nm "fs")
+fn calculer(a, b) {
+  let res = +(a, b);
+  print("Le résultat est:", res);
+}
 
-(let contenu "Salut, ceci est écrit depuis GoScript !")
-(write "test.txt" contenu)
-
-(let lecture (read "test.txt"))
-(print "Contenu du fichier :" lecture)
+calculer(10, 20);
