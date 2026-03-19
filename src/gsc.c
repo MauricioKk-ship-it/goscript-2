@@ -49,7 +49,36 @@ struct fe_Context {
   char next_char;
   int line;
 };
+// Remplacer la ligne 28:
+typedef struct { fe_CFunc f; fe_Number n; void *p; char c; } Value;
+// Note: fe_CFunc est déjà défini dans gsc.h
 
+// Ajouter ces fonctions après eval() ou avant leur utilisation:
+
+/* Lecture depuis un FILE* */
+fe_Object* fe_readfp(fe_Context *ctx, FILE *fp) {
+    // Sauvegarder l'ancien readfp
+    fe_ReadFn old_read = ctx->readfp;
+    void *old_udata = ctx->udata;
+    
+    // Configurer pour lire depuis le fichier
+    ctx->readfp = (fe_ReadFn)fgetc;
+    ctx->udata = fp;
+    
+    // Lire une expression
+    fe_Object *obj = parse_expr(ctx);
+    
+    // Restaurer l'ancienne configuration
+    ctx->readfp = old_read;
+    ctx->udata = old_udata;
+    
+    return obj;
+}
+
+/* Évaluation simplifiée */
+fe_Object* fe_eval(fe_Context *ctx, fe_Object *obj) {
+    return eval(ctx, obj, ctx->nil);
+}
 /* --- Garbage Collector --- */
 
 static void mark(fe_Context *ctx, fe_Object *obj) {
