@@ -84,6 +84,8 @@ void fe_write(fe_Context *ctx, fe_Object *obj, fe_WriteFn fn, void *udata, int q
 /* Pour transformer gsc.c en standalone */
 void fe_set(fe_Context *ctx, fe_Object *sym, fe_Object *v);
 
+fe_Object* fe_readfp(fe_Context *ctx, FILE *fp);
+fe_Object* fe_eval(fe_Context *ctx, fe_Object *obj);
 /* --- Nouveau : Prototypes pour les modules natifs --- */
 void fs_init(fe_Context *ctx);
 
