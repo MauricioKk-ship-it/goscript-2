@@ -24,6 +24,7 @@ ASTNode* program_root;
 /* Tokens */
 %token TOKEN_FN TOKEN_LET TOKEN_CONST TOKEN_RETURN
 %token TOKEN_IF TOKEN_ELSE
+%token TOKEN_NEW
 %token TOKEN_FOR TOKEN_WHILE TOKEN_LOOP TOKEN_BREAK TOKEN_CONTINUE
 %token TOKEN_IMPORT TOKEN_EXPORT TOKEN_PACKET
 %token TOKEN_STRUCT TOKEN_ENUM TOKEN_IMPL TOKEN_MATCH TOKEN_TYPE
@@ -489,8 +490,8 @@ array_items:
     ;
 
 struct_expr:
-    TOKEN_IDENTIFIER TOKEN_LBRACE struct_init_fields TOKEN_RBRACE {
-        $$ = create_struct_init_node($1, $3);
+    TOKEN_NEW TOKEN_IDENTIFIER TOKEN_LBRACE struct_init_fields TOKEN_RBRACE {
+        $$ = create_struct_init_node($2, $4);
     }
     ;
 
