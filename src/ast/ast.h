@@ -38,7 +38,7 @@ typedef enum {
 typedef enum {
     OP_ADD, OP_SUB, OP_MUL, OP_DIV,
     OP_EQ, OP_NEQ, OP_LT, OP_GT,
-    OP_AND, OP_OR, OP_NOT, OP_NEG
+    OP_NOT, OP_NEG, OP_ASSIGN
 } Operator;
 
 typedef struct ASTNode {
