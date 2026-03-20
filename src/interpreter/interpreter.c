@@ -62,6 +62,26 @@ Value* env_get(Environment* env, char* name) {
     return NULL;
 }
 
+void print_value(Value val, int newline) {
+    switch (val.type) {
+        case 0:  // int
+            printf("%d", val.int_val);
+            break;
+        case 1:  // float
+            printf("%f", val.float_val);
+            break;
+        case 2:  // string
+            printf("%s", val.string_val);
+            break;
+        case 3:  // bool
+            printf("%s", val.bool_val ? "true" : "false");
+            break;
+    }
+    if (newline) {
+        printf("\n");
+    }
+}
+
 Value evaluate_expr(ASTNode* node, Environment* env) {
     Value result = {0};
     
@@ -69,6 +89,21 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
         case NODE_NUMBER:
             result.type = 0;
             result.int_val = node->number.value;
+            break;
+            
+        case NODE_FLOAT:
+            result.type = 1;
+            result.float_val = node->float_val.value;
+            break;
+            
+        case NODE_STRING:
+            result.type = 2;
+            result.string_val = strdup(node->string_val.value);
+            break;
+            
+        case NODE_BOOL:
+            result.type = 3;
+            result.bool_val = node->bool_val.value;
             break;
             
         case NODE_IDENTIFIER: {
@@ -91,25 +126,88 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                     if (left.type == 0 && right.type == 0) {
                         result.type = 0;
                         result.int_val = left.int_val + right.int_val;
+                    } else if (left.type == 1 && right.type == 1) {
+                        result.type = 1;
+                        result.float_val = left.float_val + right.float_val;
+                    } else if (left.type == 2 || right.type == 2) {
+                        // String concatenation
+                        char* left_str = (left.type == 2) ? left.string_val : "";
+                        char* right_str = (right.type == 2) ? right.string_val : "";
+                        char* num_buf = NULL;
+                        
+                        if (left.type == 0) {
+                            num_buf = malloc(32);
+                            sprintf(num_buf, "%d", left.int_val);
+                            left_str = num_buf;
+                        }
+                        if (right.type == 0) {
+                            num_buf = malloc(32);
+                            sprintf(num_buf, "%d", right.int_val);
+                            right_str = num_buf;
+                        }
+                        
+                        result.type = 2;
+                        result.string_val = malloc(strlen(left_str) + strlen(right_str) + 1);
+                        strcpy(result.string_val, left_str);
+                        strcat(result.string_val, right_str);
+                        
+                        if (num_buf) free(num_buf);
                     }
                     break;
                 case OP_SUB:
                     if (left.type == 0 && right.type == 0) {
                         result.type = 0;
                         result.int_val = left.int_val - right.int_val;
+                    } else if (left.type == 1 && right.type == 1) {
+                        result.type = 1;
+                        result.float_val = left.float_val - right.float_val;
                     }
                     break;
                 case OP_MUL:
                     if (left.type == 0 && right.type == 0) {
                         result.type = 0;
                         result.int_val = left.int_val * right.int_val;
+                    } else if (left.type == 1 && right.type == 1) {
+                        result.type = 1;
+                        result.float_val = left.float_val * right.float_val;
                     }
                     break;
                 case OP_DIV:
-                    if (left.type == 0 && right.type == 0) {
+                    if (left.type == 0 && right.type == 0 && right.int_val != 0) {
                         result.type = 0;
                         result.int_val = left.int_val / right.int_val;
+                    } else if (left.type == 1 && right.type == 1 && right.float_val != 0) {
+                        result.type = 1;
+                        result.float_val = left.float_val / right.float_val;
                     }
+                    break;
+                case OP_LT:
+                    result.type = 3;
+                    if (left.type == 0 && right.type == 0) {
+                        result.bool_val = left.int_val < right.int_val;
+                    }
+                    break;
+                case OP_GT:
+                    result.type = 3;
+                    if (left.type == 0 && right.type == 0) {
+                        result.bool_val = left.int_val > right.int_val;
+                    }
+                    break;
+                case OP_EQ:
+                    result.type = 3;
+                    if (left.type == 0 && right.type == 0) {
+                        result.bool_val = left.int_val == right.int_val;
+                    } else if (left.type == 2 && right.type == 2) {
+                        result.bool_val = strcmp(left.string_val, right.string_val) == 0;
+                    }
+                    break;
+                case OP_NEQ:
+                    result.type = 3;
+                    if (left.type == 0 && right.type == 0) {
+                        result.bool_val = left.int_val != right.int_val;
+                    }
+                    break;
+                default:
                     break;
             }
             break;
@@ -117,10 +215,28 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
         
         case NODE_CALL: {
             char* func_name = node->call.callee->identifier.name;
-            // Find function in program
-            // For now, just handle built-in or simple calls
-            result.type = 0;
-            result.int_val = 0;
+            
+            if (strcmp(func_name, "print") == 0) {
+                if (node->call.args && node->call.args->count > 0) {
+                    Value arg = evaluate_expr(node->call.args->nodes[0], env);
+                    print_value(arg, 0);
+                }
+                result.type = 0;
+                result.int_val = 0;
+            } else if (strcmp(func_name, "println") == 0) {
+                if (node->call.args && node->call.args->count > 0) {
+                    Value arg = evaluate_expr(node->call.args->nodes[0], env);
+                    print_value(arg, 1);
+                } else {
+                    printf("\n");
+                }
+                result.type = 0;
+                result.int_val = 0;
+            } else {
+                // User function call - simplified for now
+                result.type = 0;
+                result.int_val = 0;
+            }
             break;
         }
         
@@ -141,14 +257,14 @@ void evaluate_statement(ASTNode* node, Environment* env) {
         
         case NODE_RETURN: {
             Value val = evaluate_expr(node->return_stmt.value, env);
-            printf("%d\n", val.int_val);
+            print_value(val, 1);
             exit(0);
             break;
         }
         
         case NODE_IF: {
             Value cond = evaluate_expr(node->if_stmt.condition, env);
-            if (cond.type == 0 && cond.int_val != 0) {
+            if (cond.type == 3 && cond.bool_val) {
                 for (int i = 0; i < node->if_stmt.then_branch->count; i++) {
                     evaluate_statement(node->if_stmt.then_branch->nodes[i], env);
                 }
@@ -157,6 +273,11 @@ void evaluate_statement(ASTNode* node, Environment* env) {
                     evaluate_statement(node->if_stmt.else_branch->nodes[i], env);
                 }
             }
+            break;
+        }
+        
+        case NODE_EXPR_STMT: {
+            evaluate_expr(node->expr_stmt.expr, env);
             break;
         }
         
