@@ -28,6 +28,12 @@ const char* keywords[] = {
     "loop", "break", "import", "true", "false", "nil", NULL
 };
 
+char* get_prompt() {
+    static char prompt[100];
+    snprintf(prompt, sizeof(prompt), "%sgd%s> ", GREEN, RESET);
+    return prompt;
+}
+
 char* colorize(const char* line) {
     static char buffer[8192];
     buffer[0] = '\0';
