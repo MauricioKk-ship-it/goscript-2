@@ -46,7 +46,7 @@ typedef enum {
     NODE_PIPE,
     NODE_RANGE,
     NODE_NIL,
-    NODE_TYPE,
+    NODE_TYPE_DEF,
     NODE_OPTIONAL_TYPE,
     NODE_PARAM,
     NODE_FIELD,
@@ -130,7 +130,7 @@ typedef struct ASTNode {
         /* Variables */
         struct {
             char* name;
-            struct ASTNode* type;
+            struct ASTNode* var_type;
             struct ASTNode* value;
         } var_decl;
         
@@ -287,10 +287,10 @@ typedef struct ASTNode {
             int inclusive;
         } range;
         
-        /* Types */
+        /* Types - Renommé pour éviter conflit */
         struct {
             char* name;
-        } type;
+        } type_def;
         struct {
             char* name;
         } optional_type;
@@ -298,11 +298,11 @@ typedef struct ASTNode {
         /* Paramètres et champs */
         struct {
             char* name;
-            struct ASTNode* type;
+            struct ASTNode* param_type;
         } param;
         struct {
             char* name;
-            struct ASTNode* type;
+            struct ASTNode* field_type;
         } field;
         struct {
             char* name;
