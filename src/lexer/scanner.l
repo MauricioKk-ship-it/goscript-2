@@ -1,20 +1,22 @@
 %{
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "parser.tab.h"
-#include "ast.h"
+#include "parser.h"
+#include "../ast/ast.h"
 
 extern int yylineno;
 extern char* yytext;
 
 void yyerror(const char* msg);
+int yywrap(void) { return 1; }
 %}
 
 %option noyywrap
 %option yylineno
 
 %%
-/* Mots-clés */
+ /* Mots-clés */
 "fn"                    { return TOKEN_FN; }
 "lt"                    { return TOKEN_LET; }
 "cn"                    { return TOKEN_CONST; }
@@ -48,7 +50,7 @@ void yyerror(const char* msg);
 "where"                 { return TOKEN_WHERE; }
 "as"                    { return TOKEN_AS; }
 
-/* Identifiants et littéraux */
+ /* Identifiants et littéraux */
 [a-zA-Z_][a-zA-Z0-9_]*  { 
     yylval.string = strdup(yytext); 
     return TOKEN_IDENTIFIER; 
@@ -70,7 +72,7 @@ void yyerror(const char* msg);
     return TOKEN_STRING;
 }
 
-/* Opérateurs */
+ /* Opérateurs */
 "+"                     { return TOKEN_PLUS; }
 "-"                     { return TOKEN_MINUS; }
 "*"                     { return TOKEN_MULTIPLY; }
@@ -94,7 +96,6 @@ void yyerror(const char* msg);
 "..="                   { return TOKEN_RANGE_INC; }
 "??"                    { return TOKEN_COALESCE; }
 "?"                     { return TOKEN_OPTIONAL; }
-"!"                     { return TOKEN_BANG; }
 ":"                     { return TOKEN_COLON; }
 ";"                     { return TOKEN_SEMICOLON; }
 ","                     { return TOKEN_COMMA; }
@@ -102,7 +103,7 @@ void yyerror(const char* msg);
 "::"                    { return TOKEN_DOUBLE_COLON; }
 "|>"                    { return TOKEN_PIPE_FORWARD; }
 
-/* Délimiteurs */
+ /* Délimiteurs */
 "("                     { return TOKEN_LPAREN; }
 ")"                     { return TOKEN_RPAREN; }
 "{"                     { return TOKEN_LBRACE; }
@@ -110,11 +111,11 @@ void yyerror(const char* msg);
 "["                     { return TOKEN_LBRACKET; }
 "]"                     { return TOKEN_RBRACKET; }
 
-/* Commentaires */
+ /* Commentaires */
 "//".*                  { /* Ignorer ligne */ }
 "/*"([^*]|\*+[^*/])*\*+"/" { /* Ignorer bloc */ }
 
-/* Espaces blancs */
+ /* Espaces blancs */
 [ \t\r\n]+              { /* Ignorer */ }
 
 .                       { yyerror("Caractère invalide"); }
