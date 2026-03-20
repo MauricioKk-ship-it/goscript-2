@@ -204,6 +204,9 @@ binary_expr:
     | expression TOKEN_OR expression {
         $$ = create_binary_op($1, OP_OR, $3);
     }
+    | expression TOKEN_ASSIGN expression {
+        $$ = create_assign_node($1, $3);
+    }
     ;
 
 unary_expr:
