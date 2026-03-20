@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
-#include "../ast/ast.h"
+#include "ast.h"
 
 extern int yylineno;
 extern char* yytext;
