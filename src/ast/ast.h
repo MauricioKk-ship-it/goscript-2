@@ -17,6 +17,7 @@ typedef enum {
     NODE_WHILE,
     NODE_LOOP,
     NODE_MATCH,
+    NODE_BREAK,
     NODE_RETURN,
     NODE_BINARY_OP,
     NODE_UNARY_OP,
