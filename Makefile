@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -g -O2
-LDFLAGS = -lm -ldl
+CFLAGS = -Wall -g -O2 -I./src
+LDFLAGS = -lm
 
 SRC_DIR = src
 LEXER_DIR = $(SRC_DIR)/lexer
@@ -14,44 +14,40 @@ AST_SRC = $(AST_DIR)/ast.c
 INTERPRETER_SRC = $(INTERPRETER_DIR)/interpreter.c
 MAIN_SRC = $(SRC_DIR)/main.c
 
-OBJS = scanner.o parser.o ast.o interpreter.o main.o
+# Fichiers générés
+SCANNER_C = scanner.c
+PARSER_C = parser.c
+PARSER_H = parser.h
 
-all: goscript
+OBJS = $(SCANNER_C:.c=.o) $(PARSER_C:.c=.o) ast.o interpreter.o main.o
 
-scanner.c: $(LEXER_SRC)
-	flex -o scanner.c $(LEXER_SRC)
-
-parser.c: $(PARSER_SRC)
-	bison -d -o parser.c $(PARSER_SRC)
-
-scanner.o: scanner.c parser.h
-	$(CC) $(CFLAGS) -c scanner.c -o scanner.o
-
-parser.o: parser.c
-	$(CC) $(CFLAGS) -c parser.c -o parser.o
-
-ast.o: $(AST_SRC)
-	$(CC) $(CFLAGS) -c $(AST_SRC) -o ast.o
-
-interpreter.o: $(INTERPRETER_SRC)
-	$(CC) $(CFLAGS) -c $(INTERPRETER_SRC) -o interpreter.o
-
-main.o: $(MAIN_SRC)
-	$(CC) $(CFLAGS) -c $(MAIN_SRC) -o main.o
-
-goscript: $(OBJS)
+all: $(PARSER_H) $(SCANNER_C) $(PARSER_C) $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o goscript
 
+$(SCANNER_C): $(LEXER_SRC)
+	flex -o $(SCANNER_C) $(LEXER_SRC)
+
+$(PARSER_C) $(PARSER_H): $(PARSER_SRC)
+	bison -d -o $(PARSER_C) $(PARSER_SRC)
+
+scanner.o: $(SCANNER_C) $(PARSER_H)
+	$(CC) $(CFLAGS) -c $(SCANNER_C) -o scanner.o
+
+parser.o: $(PARSER_C)
+	$(CC) $(CFLAGS) -c $(PARSER_C) -o parser.o
+
+ast.o: $(AST_SRC) $(PARSER_H)
+	$(CC) $(CFLAGS) -c $(AST_SRC) -o ast.o
+
+interpreter.o: $(INTERPRETER_SRC) $(PARSER_H)
+	$(CC) $(CFLAGS) -c $(INTERPRETER_SRC) -o interpreter.o
+
+main.o: $(MAIN_SRC) $(PARSER_H)
+	$(CC) $(CFLAGS) -c $(MAIN_SRC) -o main.o
+
 clean:
-	rm -f scanner.c parser.c parser.h
+	rm -f $(SCANNER_C) $(PARSER_C) $(PARSER_H)
 	rm -f *.o
 	rm -f goscript
 
-install:
-	cp goscript /usr/local/bin/
-	mkdir -p /usr/local/lib/goscript/granul/
-
-test:
-	./goscript examples/test.gjs
-
-.PHONY: all clean install test
+.PHONY: all clean
