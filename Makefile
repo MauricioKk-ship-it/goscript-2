@@ -13,7 +13,7 @@ SCANNER_C = scanner.c
 PARSER_C = parser.c
 PARSER_H = parser.h
 
-OBJS = $(SCANNER_C:.c=.o) $(PARSER_C:.c=.o) ast.o main.o
+OBJS = $(SCANNER_C:.c=.o) $(PARSER_C:.c=.o) interpreter.o ast.o main.o
 
 all: $(PARSER_H) $(SCANNER_C) $(PARSER_C) $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o goscript
@@ -26,6 +26,9 @@ $(PARSER_C) $(PARSER_H): $(PARSER_DIR)/parser.y
 
 scanner.o: $(SCANNER_C) $(PARSER_H)
 	$(CC) $(CFLAGS) -c $(SCANNER_C) -o scanner.o
+
+interpreter.o: src/interpreter/interpreter.c $(PARSER_H)
+    $(CC) $(CFLAGS) -c src/interpreter/interpreter.c -o interpreter.o
 
 parser.o: $(PARSER_C) $(PARSER_H)
 	$(CC) $(CFLAGS) -c $(PARSER_C) -o parser.o
