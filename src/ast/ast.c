@@ -411,6 +411,13 @@ ASTNode* create_optional_type_node(char* name) {
     node->optional_type.name = strdup(name);
     return node;
 }
+ASTNode* create_member_access(ASTNode* object, char* member) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_MEMBER_ACCESS;
+    node->member.object = object;
+    node->member.member = strdup(member);
+    return node;
+}
 
 ASTNode* create_param_node(char* name, ASTNode* type) {
     ASTNode* node = malloc(sizeof(ASTNode));
