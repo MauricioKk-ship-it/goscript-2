@@ -22,27 +22,29 @@ extern void free_ast(ASTNode* node);
 #define CYAN    "\033[36m"
 #define BOLD    "\033[1m"
 
-// Mots-clés pour coloration
+// Mots-clés
 const char* keywords[] = {
     "fn", "lt", "cn", "ret", "if", "else", "for", "while", 
-    "loop", "break", "import", "true", "false", "nil", NULL
+    "loop", "break", "import", "true", "false", "nil", "print", "println", NULL
 };
 
 char* get_prompt() {
-    static char prompt[100];
-    snprintf(prompt, sizeof(prompt), "%sgd%s> ", GREEN, RESET);
+    static char prompt[50];
+    snprintf(prompt, sizeof(prompt), "%s>>>%s ", GREEN, RESET);
     return prompt;
 }
 
 char* colorize(const char* line) {
-    static char buffer[8192];
+    static char buffer[4096];
     buffer[0] = '\0';
-    char word[256];
+    char word[128];
     int i = 0, j;
+    int in_string = 0;
     
     while (line[i] != '\0') {
-        // Chaînes
-        if (line[i] == '"') {
+        // Gestion des chaînes
+        if (line[i] == '"' && !in_string) {
+            in_string = 1;
             strcat(buffer, GREEN);
             strcat(buffer, "\"");
             i++;
@@ -56,6 +58,7 @@ char* colorize(const char* line) {
                 i++;
             }
             strcat(buffer, RESET);
+            in_string = 0;
             continue;
         }
         
@@ -71,7 +74,7 @@ char* colorize(const char* line) {
             break;
         }
         
-        // Mots (identifiants, mots-clés)
+        // Mots
         if ((line[i] >= 'a' && line[i] <= 'z') || 
             (line[i] >= 'A' && line[i] <= 'Z') || 
             line[i] == '_') {
@@ -123,7 +126,7 @@ char* colorize(const char* line) {
             continue;
         }
         
-        // Parenthèses, accolades
+        // Parenthèses
         if (strchr("(){}[];,", line[i])) {
             strcat(buffer, RED);
             char c[2] = {line[i], '\0'};
@@ -133,7 +136,6 @@ char* colorize(const char* line) {
             continue;
         }
         
-        // Caractères normaux
         char c[2] = {line[i], '\0'};
         strcat(buffer, c);
         i++;
@@ -145,10 +147,11 @@ char* colorize(const char* line) {
 int evaluate_line(const char* line) {
     if (strlen(line) == 0) return 0;
     
+    // Créer fichier temporaire
     char temp_file[] = "/tmp/goscript_XXXXXX";
     int fd = mkstemp(temp_file);
     if (fd == -1) {
-        printf("Error: Cannot create temp file\n");
+        printf("%sError: Cannot create temp file%s\n", RED, RESET);
         return 1;
     }
     
@@ -170,7 +173,7 @@ int evaluate_line(const char* line) {
         free_ast(program_root);
         program_root = NULL;
     } else if (parse_result != 0) {
-        printf("%sError: Parsing failed%s\n", RED, RESET);
+        // Ne rien afficher, l'erreur est déjà affichée par yyerror
     }
     
     unlink(temp_file);
@@ -179,34 +182,35 @@ int evaluate_line(const char* line) {
 
 void show_help() {
     printf("\n");
-    printf("╔══════════════════════════════════════════════════╗\n");
-    printf("║  Goscript REPL - Interactive Mode                ║\n");
-    printf("╠══════════════════════════════════════════════════╣\n");
-    printf("║  Commands:                                       ║\n");
-    printf("║    .exit    - Exit REPL                          ║\n");
-    printf("║    .help    - Show this help                     ║\n");
-    printf("║    .clear   - Clear screen                       ║\n");
-    printf("╠══════════════════════════════════════════════════╣\n");
-    printf("║  Features:                                       ║\n");
-    printf("║    • Syntax highlighting                         ║\n");
-    printf("║    • Command history (↑/↓ arrows)                ║\n");
-    printf("║    • Multi-line input (use \\ at end)             ║\n");
-    printf("╠══════════════════════════════════════════════════╣\n");
-    printf("║  Examples:                                       ║\n");
-    printf("║    >>> lt a = 10                                 ║\n");
-    printf("║    >>> lt b = 20                                 ║\n");
-    printf("║    >>> println(a + b)                            ║\n");
-    printf("║    30                                            ║\n");
-    printf("╚══════════════════════════════════════════════════╝\n");
+    printf("%s%s=== Goscript REPL Help ===%s\n", BOLD, CYAN, RESET);
+    printf("\n");
+    printf("  %sCommands:%s\n", YELLOW, RESET);
+    printf("    .exit      - Exit REPL\n");
+    printf("    .help      - Show this help\n");
+    printf("    .clear     - Clear screen\n");
+    printf("\n");
+    printf("  %sExamples:%s\n", YELLOW, RESET);
+    printf("    >>> lt a = 10\n");
+    printf("    >>> lt b = 20\n");
+    printf("    >>> println(a + b)\n");
+    printf("    30\n");
+    printf("\n");
+    printf("  %sMulti-line:%s\n", YELLOW, RESET);
+    printf("    Use \\ at end of line for multi-line input\n");
+    printf("    Example:\n");
+    printf("    >>> fn main() { \\\n");
+    printf("    ... lt x = 42 \\\n");
+    printf("    ... println(x) \\\n");
+    printf("    ... }\n");
     printf("\n");
 }
 
 int repl_main() {
     printf("\n");
-    printf("%s╔══════════════════════════════════════════════════╗%s\n", BOLD CYAN, RESET);
-    printf("%s║       Goscript REPL v1.0                        ║%s\n", BOLD CYAN, RESET);
-    printf("%s║       Type .help for help                       ║%s\n", BOLD CYAN, RESET);
-    printf("%s╚══════════════════════════════════════════════════╝%s\n", BOLD CYAN, RESET);
+    printf("%s%s╔════════════════════════════════════════╗%s\n", BOLD, CYAN, RESET);
+    printf("%s%s║      Goscript REPL v1.0               ║%s\n", BOLD, CYAN, RESET);
+    printf("%s%s║      Type .help for help              ║%s\n", BOLD, CYAN, RESET);
+    printf("%s%s╚════════════════════════════════════════╝%s\n", BOLD, CYAN, RESET);
     printf("\n");
     
     char* input;
@@ -225,7 +229,7 @@ int repl_main() {
             add_history(input);
         }
         
-        // Commandes
+        // Commandes spéciales
         if (strcmp(input, ".exit") == 0) {
             free(input);
             break;
@@ -245,17 +249,18 @@ int repl_main() {
                 multiline_buffer = malloc(1);
                 multiline_buffer[0] = '\0';
             }
-            size_t len = strlen(multiline_buffer) + strlen(input);
+            input[strlen(input)-1] = '\0'; // Enlever le \
+            size_t len = strlen(multiline_buffer) + strlen(input) + 1;
             multiline_buffer = realloc(multiline_buffer, len + 1);
             strcat(multiline_buffer, input);
-            multiline_buffer[len-1] = ' ';
+            strcat(multiline_buffer, " ");
             free(input);
             continue;
         }
         
         if (multiline_buffer) {
             size_t len = strlen(multiline_buffer) + strlen(input) + 1;
-            multiline_buffer = realloc(multiline_buffer, len);
+            multiline_buffer = realloc(multiline_buffer, len + 1);
             strcat(multiline_buffer, input);
             free(input);
             evaluate_line(multiline_buffer);
@@ -265,7 +270,6 @@ int repl_main() {
             evaluate_line(input);
             free(input);
         }
-        printf("\n");
     }
     
     printf("%sGoodbye!%s\n", GREEN, RESET);
