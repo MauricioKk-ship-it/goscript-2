@@ -12,7 +12,7 @@ int yylex(void);
 
 ASTNode* program_root;
 
-/* Function declarations for AST creation */
+/* Function declarations */
 ASTNode* create_program_node(ASTNodeList* statements);
 ASTNode* create_import_node(char* path, char* alias);
 ASTNode* create_packet_import_node(char* path);
@@ -35,9 +35,12 @@ ASTNode* create_bool_node(int value);
 ASTNode* create_nil_node();
 ASTNode* create_identifier_node(char* name);
 ASTNode* create_call_node(ASTNode* callee, ASTNodeList* args);
+ASTNode* create_member_access(ASTNode* object, char* member);
+ASTNode* create_static_access(ASTNode* object, char* member);
 ASTNode* create_array_node(ASTNodeList* elements);
 ASTNode* create_struct_node(char* name, ASTNodeList* fields);
 ASTNode* create_enum_node(char* name, ASTNodeList* variants);
+ASTNode* create_struct_init_node(char* name, ASTNodeList* fields);
 ASTNode* create_for_node(ASTNode* init, ASTNode* cond, ASTNode* inc, ASTNodeList* body);
 ASTNode* create_assign_node(ASTNode* left, ASTNode* right);
 
@@ -89,7 +92,8 @@ void add_arg(ASTNodeList* list, ASTNode* arg);
 %type <node> if_statement for_statement while_statement loop_statement
 %type <node> binary_expr unary_expr primary_expr call_expr
 %type <node> import_statement packet_decl struct_decl enum_decl
-%type <node_list> statement_list argument_list param_list struct_fields enum_variants
+%type <node> array_expr struct_expr
+%type <node_list> statement_list argument_list param_list struct_fields enum_variants array_items struct_init_fields
 
 /* Operator precedence */
 %left TOKEN_PIPE_FORWARD
@@ -161,12 +165,6 @@ import_statement:
     | TOKEN_IMPORT TOKEN_IDENTIFIER TOKEN_FROM TOKEN_IDENTIFIER {
         $$ = create_import_node($4, $2);
     }
-    | TOKEN_IMPORT TOKEN_DOT TOKEN_IDENTIFIER TOKEN_FROM TOKEN_IDENTIFIER {
-        char* path = malloc(strlen($3) + 3);
-        sprintf(path, "./%s", $3);
-        $$ = create_import_node(path, $5);
-        free(path);
-    }
     ;
 
 packet_decl:
@@ -223,11 +221,6 @@ if_statement:
     | TOKEN_IF expression TOKEN_LBRACE statement_list TOKEN_RBRACE TOKEN_ELSE TOKEN_LBRACE statement_list TOKEN_RBRACE {
         $$ = create_if_node($2, $4, $8);
     }
-    | TOKEN_IF expression TOKEN_LBRACE statement_list TOKEN_RBRACE TOKEN_ELSEIF expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
-        ASTNodeList* else_branch = create_node_list();
-        add_to_node_list(else_branch, create_if_node($7, $9, NULL));
-        $$ = create_if_node($2, $4, else_branch);
-    }
     ;
 
 /* Loops */
@@ -276,12 +269,12 @@ struct_fields:
     /* empty */ {
         $$ = NULL;
     }
-    | TOKEN_IDENTIFIER TOKEN_COLON TOKEN_IDENTIFIER TOKEN_COMMA {
+    | TOKEN_IDENTIFIER TOKEN_COLON TOKEN_IDENTIFIER {
         $$ = create_node_list();
         add_to_node_list($$, create_identifier_node($1));
     }
-    | struct_fields TOKEN_IDENTIFIER TOKEN_COLON TOKEN_IDENTIFIER TOKEN_COMMA {
-        add_to_node_list($1, create_identifier_node($2));
+    | struct_fields TOKEN_COMMA TOKEN_IDENTIFIER TOKEN_COLON TOKEN_IDENTIFIER {
+        add_to_node_list($1, create_identifier_node($3));
         $$ = $1;
     }
     ;
@@ -297,12 +290,12 @@ enum_variants:
     /* empty */ {
         $$ = NULL;
     }
-    | TOKEN_IDENTIFIER TOKEN_COMMA {
+    | TOKEN_IDENTIFIER {
         $$ = create_node_list();
         add_to_node_list($$, create_identifier_node($1));
     }
-    | enum_variants TOKEN_IDENTIFIER TOKEN_COMMA {
-        add_to_node_list($1, create_identifier_node($2));
+    | enum_variants TOKEN_COMMA TOKEN_IDENTIFIER {
+        add_to_node_list($1, create_identifier_node($3));
         $$ = $1;
     }
     ;
@@ -316,64 +309,46 @@ expression:
 
 binary_expr:
     expression TOKEN_PLUS expression {
-        $$ = create_binary_op($1, OP_ADD, $3);
+        $$ = create_binary_op($1, 1, $3);
     }
     | expression TOKEN_MINUS expression {
-        $$ = create_binary_op($1, OP_SUB, $3);
+        $$ = create_binary_op($1, 2, $3);
     }
     | expression TOKEN_MULTIPLY expression {
-        $$ = create_binary_op($1, OP_MUL, $3);
+        $$ = create_binary_op($1, 3, $3);
     }
     | expression TOKEN_DIVIDE expression {
-        $$ = create_binary_op($1, OP_DIV, $3);
-    }
-    | expression TOKEN_MODULO expression {
-        $$ = create_binary_op($1, OP_MOD, $3);
+        $$ = create_binary_op($1, 4, $3);
     }
     | expression TOKEN_EQ expression {
-        $$ = create_binary_op($1, OP_EQ, $3);
+        $$ = create_binary_op($1, 5, $3);
     }
     | expression TOKEN_NEQ expression {
-        $$ = create_binary_op($1, OP_NEQ, $3);
+        $$ = create_binary_op($1, 6, $3);
     }
     | expression TOKEN_LT expression {
-        $$ = create_binary_op($1, OP_LT, $3);
-    }
-    | expression TOKEN_LTE expression {
-        $$ = create_binary_op($1, OP_LTE, $3);
+        $$ = create_binary_op($1, 7, $3);
     }
     | expression TOKEN_GT expression {
-        $$ = create_binary_op($1, OP_GT, $3);
-    }
-    | expression TOKEN_GTE expression {
-        $$ = create_binary_op($1, OP_GTE, $3);
+        $$ = create_binary_op($1, 8, $3);
     }
     | expression TOKEN_AND expression {
-        $$ = create_binary_op($1, OP_AND, $3);
+        $$ = create_binary_op($1, 9, $3);
     }
     | expression TOKEN_OR expression {
-        $$ = create_binary_op($1, OP_OR, $3);
+        $$ = create_binary_op($1, 10, $3);
     }
     | expression TOKEN_ASSIGN expression {
         $$ = create_assign_node($1, $3);
-    }
-    | expression TOKEN_RANGE expression {
-        $$ = create_binary_op($1, OP_RANGE, $3);
-    }
-    | expression TOKEN_PIPE_FORWARD expression {
-        $$ = create_binary_op($1, OP_PIPE, $3);
     }
     ;
 
 unary_expr:
     TOKEN_NOT expression {
-        $$ = create_unary_op(OP_NOT, $2);
+        $$ = create_unary_op(11, $2);
     }
     | TOKEN_MINUS expression {
-        $$ = create_unary_op(OP_NEG, $2);
-    }
-    | TOKEN_OPTIONAL expression {
-        $$ = create_unary_op(OP_OPTIONAL, $2);
+        $$ = create_unary_op(12, $2);
     }
     ;
 
@@ -410,14 +385,6 @@ primary_expr:
 call_expr:
     primary_expr TOKEN_LPAREN argument_list TOKEN_RPAREN {
         $$ = create_call_node($1, $3);
-    }
-    | primary_expr TOKEN_DOT TOKEN_IDENTIFIER TOKEN_LPAREN argument_list TOKEN_RPAREN {
-        ASTNode* member = create_member_access($1, $3);
-        $$ = create_call_node(member, $5);
-    }
-    | primary_expr TOKEN_DOUBLE_COLON TOKEN_IDENTIFIER TOKEN_LPAREN argument_list TOKEN_RPAREN {
-        ASTNode* static_member = create_static_access($1, $3);
-        $$ = create_call_node(static_member, $5);
     }
     ;
 
@@ -467,10 +434,10 @@ struct_init_fields:
     }
     | TOKEN_IDENTIFIER TOKEN_COLON expression {
         $$ = create_node_list();
-        add_to_node_list($$, create_binary_op(create_identifier_node($1), OP_ASSIGN, $3));
+        add_to_node_list($$, create_binary_op(create_identifier_node($1), 0, $3));
     }
     | struct_init_fields TOKEN_COMMA TOKEN_IDENTIFIER TOKEN_COLON expression {
-        add_to_node_list($1, create_binary_op(create_identifier_node($3), OP_ASSIGN, $5));
+        add_to_node_list($1, create_binary_op(create_identifier_node($3), 0, $5));
         $$ = $1;
     }
     ;
