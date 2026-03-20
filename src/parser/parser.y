@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ast.h"
+#include "../ast/ast.h"
 
 extern int yylineno;
 extern char* yytext;
@@ -56,7 +56,7 @@ ASTNode* program_root;
 %type <node> import_statement packet_decl function_decl
 %type <node> let_decl const_decl return_statement
 %type <node> binary_expr unary_expr primary_expr call_expr
-%type <node_list> statement_list
+%type <node_list> statement_list argument_list
 
 %start program
 
@@ -145,15 +145,12 @@ if_statement:
 
 for_statement:
     TOKEN_FOR TOKEN_IDENTIFIER TOKEN_ASSIGN expression TOKEN_SEMICOLON expression TOKEN_SEMICOLON expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
-        // Simple for loop: for i = 0; i < 10; i = i + 1 { ... }
         ASTNode* init = create_let_node($2, NULL, $4);
         ASTNode* cond = $6;
         ASTNode* inc = create_expr_statement($8);
-        // Créer un noeud for spécial
         $$ = create_for_node(init, cond, inc, $10);
     }
     | TOKEN_FOR expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
-        // While-style for: for condition { ... }
         $$ = create_while_node($2, $4);
     }
     ;
@@ -257,7 +254,9 @@ call_expr:
     ;
 
 argument_list:
-    /* empty */ { $$ = NULL; }
+    /* empty */ {
+        $$ = NULL;
+    }
     | expression {
         $$ = create_arg_list();
         add_arg($$, $1);
