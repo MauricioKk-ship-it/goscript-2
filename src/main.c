@@ -7,8 +7,8 @@ extern ASTNode* program_root;
 extern FILE* yyin;
 extern int yyparse(void);
 extern int repl_main(void);
+extern void interpret_program(ASTNode* program);
 
-// Forward declarations
 void print_ast(ASTNode* node, int depth);
 
 int main(int argc, char** argv) {
@@ -22,13 +22,12 @@ int main(int argc, char** argv) {
         } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--interactive") == 0) {
             repl_mode = 1;
         } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            printf("Goscript - A modern scripting language\n");
             printf("Usage: %s [options] [file.gjs]\n", argv[0]);
             printf("Options:\n");
-            printf("  -d, --debug      Show AST\n");
-            printf("  -i, --interactive Run REPL (interactive mode)\n");
-            printf("  -h, --help       Show help\n");
-            printf("\n");
-            printf("If no file is specified, REPL mode is activated automatically.\n");
+            printf("  -i, --interactive  Run REPL (interactive mode)\n");
+            printf("  -d, --debug        Show AST\n");
+            printf("  -h, --help         Show this help\n");
             return 0;
         } else if (argv[i][0] != '-') {
             filename = argv[i];
@@ -117,12 +116,7 @@ void print_ast(ASTNode* node, int depth) {
             printf("%s", node->identifier.name);
             break;
         case NODE_WHILE:
-            printf("While: ");
-            print_ast(node->while_stmt.condition, 0);
-            printf("\n");
-            break;
-        case NODE_LOOP:
-            printf("Loop\n");
+            printf("While\n");
             break;
         default:
             printf("Node(%d)", node->type);
