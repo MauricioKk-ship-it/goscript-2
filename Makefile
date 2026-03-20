@@ -28,7 +28,7 @@ scanner.o: $(SCANNER_C) $(PARSER_H)
 	$(CC) $(CFLAGS) -c $(SCANNER_C) -o scanner.o
 
 interpreter.o: src/interpreter/interpreter.c $(PARSER_H)
-    $(CC) $(CFLAGS) -c src/interpreter/interpreter.c -o interpreter.o
+	$(CC) $(CFLAGS) -c src/interpreter/interpreter.c -o interpreter.o
 
 parser.o: $(PARSER_C) $(PARSER_H)
 	$(CC) $(CFLAGS) -c $(PARSER_C) -o parser.o
@@ -42,6 +42,6 @@ main.o: $(MAIN_SRC) $(PARSER_H)
 clean:
 	rm -f $(SCANNER_C) $(PARSER_C) $(PARSER_H)
 	rm -f *.o
-	rm -f goscript
+	rm -f gd
 
 .PHONY: all clean
