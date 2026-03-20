@@ -120,6 +120,12 @@ ASTNode* create_while_node(ASTNode* condition, ASTNodeList* body) {
     node->while_stmt.body = body;
     return node;
 }
+ASTNode* create_break_node() {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_BREAK;
+    return node;
+}
+
 ASTNode* create_assign_op(ASTNode* left, Operator op, ASTNode* right) {
     ASTNode* node = malloc(sizeof(ASTNode));
     node->type = NODE_BINARY_OP;
