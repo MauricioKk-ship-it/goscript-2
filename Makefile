@@ -16,7 +16,7 @@ PARSER_H = parser.h
 OBJS = $(SCANNER_C:.c=.o) $(PARSER_C:.c=.o) interpreter.o ast.o main.o
 
 all: $(PARSER_H) $(SCANNER_C) $(PARSER_C) $(OBJS)
-	$(CC) $(OBJS) $(LDFLAGS) -o goscript
+	$(CC) $(OBJS) $(LDFLAGS) -o gd
 
 $(SCANNER_C): $(LEXER_DIR)/scanner.l
 	flex -o $(SCANNER_C) $(LEXER_DIR)/scanner.l
