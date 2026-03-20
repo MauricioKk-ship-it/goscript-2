@@ -376,7 +376,14 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             }
             break;
         }
-        
+        case NODE_MEMBER_ACCESS: {
+    Value obj = evaluate_expr(node->member.object, env);
+    // Pour l'instant, on ne gère que les structures
+    // À implémenter complètement plus tard
+    result.type = 0;
+    result.int_val = 0;
+    break;
+}
         case NODE_CALL: {
             char* func_name = node->call.callee->identifier.name;
             
