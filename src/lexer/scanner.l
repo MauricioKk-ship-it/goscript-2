@@ -3,13 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
-#include "ast.h"
 
 extern int yylineno;
 extern char* yytext;
 
 void yyerror(const char* msg);
-int yywrap(void) { return 1; }
 %}
 
 %option noyywrap
