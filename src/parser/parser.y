@@ -444,6 +444,13 @@ primary_expr:
     | call_expr
     | array_expr
     | struct_expr
+    | member_access 
+    ;
+
+member_access:
+    primary_expr TOKEN_DOT TOKEN_IDENTIFIER {
+        $$ = create_member_access($1, $3);
+    }
     ;
 
 call_expr:
