@@ -2,6 +2,41 @@
 #include <dlfcn.h>
 #include <ffi.h>
 
+
+// ==================== GESTION DES IMPLÉMENTATIONS ====================
+
+typedef struct {
+    char* struct_name;
+    ASTNode* impl_node;
+} ImplEntry;
+
+static ImplEntry* impl_table = NULL;
+static int impl_count = 0;
+static int impl_capacity = 0;
+
+// Enregistrer une implémentation
+void register_impl(char* struct_name, ASTNode* impl_node) {
+    if (impl_count >= impl_capacity) {
+        impl_capacity = impl_capacity == 0 ? 10 : impl_capacity * 2;
+        impl_table = realloc(impl_table, impl_capacity * sizeof(ImplEntry));
+    }
+    impl_table[impl_count].struct_name = strdup(struct_name);
+    impl_table[impl_count].impl_node = impl_node;
+    impl_count++;
+}
+
+// Trouver une implémentation par nom de structure
+ASTNode* find_impl(char* struct_name) {
+    for (int i = 0; i < impl_count; i++) {
+        if (strcmp(impl_table[i].struct_name, struct_name) == 0) {
+            return impl_table[i].impl_node;
+        }
+    }
+    return NULL;
+}
+
+// Trouver une méthode dans une implémentation
+
 // Handle global pour la libc (ouvert une seule fois)
 extern ASTNode* program_root;
 static void* libc_handle = NULL;
