@@ -141,6 +141,13 @@ import_statement:
     | TOKEN_IMPORT TOKEN_IDENTIFIER TOKEN_FROM TOKEN_STRING {
         $$ = create_import_node($4, $2, NULL);
     }
+    // NOUVELLE RÈGLE : import sys from .sys (sans guillemets)
+    | TOKEN_IMPORT TOKEN_IDENTIFIER TOKEN_FROM TOKEN_DOT TOKEN_IDENTIFIER {
+        char* path = malloc(strlen($5) + 3);
+        sprintf(path, "./%s", $5);
+        $$ = create_import_node(path, $2, NULL);
+        free(path);
+    }
     | TOKEN_IMPORT TOKEN_IDENTIFIER TOKEN_AS TOKEN_IDENTIFIER {
         $$ = create_import_node($2, $4, NULL);
     }
