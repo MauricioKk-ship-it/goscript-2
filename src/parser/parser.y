@@ -30,6 +30,10 @@ ASTNode* program_root;
 %token TOKEN_TRUE TOKEN_FALSE TOKEN_NIL
 %token TOKEN_AS TOKEN_IN TOKEN_FROM TOKEN_PUB
 %token TOKEN_NEW
+
+/* Tokens - Ajoutez ces lignes */
+%token TOKEN_MODULE TOKEN_ONLY TOKEN_TIMEOUT TOKEN_SANDBOX TOKEN_ALLOW_FFI
+
 %token TOKEN_UNDERSCORE
 
 /* Operators */
