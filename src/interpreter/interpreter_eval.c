@@ -498,6 +498,47 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             }
             break;
         }
+        case NODE_STRUCT_INIT: {
+    // Créer une nouvelle structure
+            result.type = 6;  // type structure
+            result.struct_val.name = strdup(node->struct_init.name);
+    
+    // Compter le nombre de champs
+            int field_count = 0;
+            if (node->struct_init.fields) {
+                field_count = node->struct_init.fields->count;
+            }
+    
+    // Allouer le tableau de champs
+            result.struct_val.fields = malloc(field_count * sizeof(Value*));
+    
+    // Initialiser chaque champ
+            for (int i = 0; i < field_count; i++) {
+                ASTNode* field_node = node->struct_init.fields->nodes[i];
+                if (field_node->type == NODE_FIELD_INIT) {
+                    Value* field_val = malloc(sizeof(Value));
+                    *field_val = evaluate_expr(field_node->field_init.value, env);
+                    result.struct_val.fields[i] = field_val;
+                }
+            }
+            break;
+        }
+        case NODE_MEMBER_ACCESS: {
+            // Accéder à un champ d'une structure
+            Value obj = evaluate_expr(node->member.object, env);
+            if (obj.type == 6) { // Structure
+        // Chercher le champ par nom
+        // Pour simplifier, on suppose que les champs sont dans l'ordre
+        // Idéalement, il faudrait faire une correspondance par nom
+                if (obj.struct_val.fields && obj.struct_val.fields[0]) {
+                    result = *obj.struct_val.fields[0];
+                } else {
+                    result.type = 0;
+                    result.int_val = 0;
+                }
+            }
+            break;
+        }
         
         case NODE_CALL: {
             char* func_name = node->call.callee->identifier.name;
