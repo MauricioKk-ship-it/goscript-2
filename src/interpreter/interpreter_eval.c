@@ -514,7 +514,6 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
         }
 
         
-NODE_METHOD_CALL
 case NODE_METHOD_CALL: {
     // Évaluer l'objet (la structure)
     Value obj = evaluate_expr(node->method_call.object, env);
