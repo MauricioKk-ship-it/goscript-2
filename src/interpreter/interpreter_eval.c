@@ -513,26 +513,29 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             break;
         }
 
-        
+        case NODE_IMPL: {
+    // Les implémentations sont stockées dans l'environnement global
+    // On ne fait rien ici, elles sont déjà enregistrées
+    result.type = 0;
+    result.int_val = 0;
+    break;
+}
+
 case NODE_METHOD_CALL: {
     // Évaluer l'objet (la structure)
     Value obj = evaluate_expr(node->method_call.object, env);
     
-    if (obj.type == 6) { // C'est une structure
+    if (obj.type == 6) { // Structure
         char* method_name = node->method_call.method;
         
-        // Chercher l'implémentation correspondant au type de la structure
+        // Chercher l'implémentation correspondante
         ASTNode* impl_node = NULL;
         if (program_root) {
             for (int i = 0; i < program_root->program.statements->count; i++) {
                 ASTNode* stmt = program_root->program.statements->nodes[i];
-                if (stmt && stmt->type == NODE_IMPL && stmt->impl.name) {
-                    // Comparer avec le nom du type de la structure
-                    // Pour l'instant, on utilise le nom stocké dans la structure
-                    if (strcmp(stmt->impl.name, "Rectangle") == 0 ||
-                        strcmp(stmt->impl.name, "Counter") == 0 ||
-                        strcmp(stmt->impl.name, "Person") == 0 ||
-                        strcmp(stmt->impl.name, "BankAccount") == 0) {
+                if (stmt && stmt->type == NODE_IMPL) {
+                    // Pour l'instant, on compare avec le nom de la structure
+                    if (strcmp(stmt->impl.name, "Rectangle") == 0) {
                         impl_node = stmt;
                         break;
                     }
@@ -557,8 +560,7 @@ case NODE_METHOD_CALL: {
                 Environment* method_env = create_env(env);
                 
                 // Lier 'self' à l'objet
-                Value self_val = obj;
-                env_set(method_env, "self", self_val);
+                env_set(method_env, "self", obj);
                 
                 // Lier les arguments
                 if (node->method_call.args) {
@@ -586,40 +588,12 @@ case NODE_METHOD_CALL: {
                 free(method_env);
                 result = ret_val;
             } else {
-                fprintf(stderr, "Method '%s' not found\n", method_name);
                 result.type = 0;
                 result.int_val = 0;
             }
         } else {
             result.type = 0;
             result.int_val = 0;
-        }
-    }
-    break;
-}
-case NODE_STRUCT_INIT: {
-    // Créer une nouvelle structure
-    result.type = 6;  // type structure
-    
-    // Compter le nombre de champs
-    int field_count = 0;
-    if (node->struct_init.fields) {
-        field_count = node->struct_init.fields->count;
-    }
-    
-    // Allouer le tableau de champs (tableau de Value*)
-    result.struct_val.fields = malloc(field_count * sizeof(Value*));
-    result.struct_val.field_count = field_count;
-    
-    // Initialiser chaque champ avec les valeurs évaluées
-    for (int i = 0; i < field_count; i++) {
-        ASTNode* field_node = node->struct_init.fields->nodes[i];
-        if (field_node->type == NODE_FIELD_INIT) {
-            Value* field_val = malloc(sizeof(Value));
-            *field_val = evaluate_expr(field_node->field_init.value, env);
-            result.struct_val.fields[i] = field_val;
-        } else {
-            result.struct_val.fields[i] = NULL;
         }
     }
     break;
