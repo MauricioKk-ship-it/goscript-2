@@ -1,41 +1,31 @@
 fn main() {
-    println("=== ADVANCED OPERATORS TEST ===")
+    println("=== TEST DES FONCTIONS C ===\n")
     
-    // Comparison operators
-    lt a = 10
-    lt b = 20
+    // Appels directs aux fonctions C
+    lt sum = c_add(10, 20)
+    println("10 + 20 = " + sum)
     
-    println("a >= b: " + (a >= b))
-    println("a <= b: " + (a <= b))
-    println("")
+    lt product = c_mul(5, 6)
+    println("5 * 6 = " + product)
     
-    // Assignment operators
-    lt x = 5
-    println("x = " + x)
+    lt power = c_pow(2.0, 5.0)
+    println("2^5 = " + power)
     
-    x += 3
-    println("x += 3 => " + x)
+    lt max_val = c_max(42, 17)
+    println("max(42, 17) = " + max_val)
     
-    x -= 2
-    println("x -= 2 => " + x)
+    // Manipulation de chaînes
+    lt hello = "Hello"
+    lt world = " World"
+    lt message = c_strcat(hello, world)
+    println(message)
     
-    x *= 4
-    println("x *= 4 => " + x)
+    lt len = c_strlen(message)
+    println("Longueur: " + len)
     
-    x /= 2
-    println("x /= 2 => " + x)
+    // System call
+    c_system("echo 'Commande système exécutée!'")
     
-    x %= 3
-    println("x %= 3 => " + x)
-    
-    // While with >=
-    println("")
-    println("=== COUNTDOWN WITH >= ===")
-    lt i = 5
-    while i >= 1 {
-        println("Count: " + i)
-        i -= 1
-    }
-    
+    println("\n=== TEST TERMINÉ ===")
     ret 0
 }
