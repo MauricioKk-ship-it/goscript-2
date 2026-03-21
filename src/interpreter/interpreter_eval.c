@@ -614,21 +614,48 @@ case NODE_MEMBER_ACCESS: {
 
 // ==================== APPEL DE MÉTHODES ====================
 
+// ==================== APPEL DE MÉTHODE ====================
+
 case NODE_METHOD_CALL: {
+    // Évaluer l'objet (la structure)
     Value obj = evaluate_expr(node->method_call.object, env);
     
-    if (obj.type == 6 && obj.struct_val.struct_name) {  // Utilisez struct_name
+    if (obj.type == 6) { // C'est une structure
         char* method_name = node->method_call.method;
         
-        // Chercher l'implémentation
-        ASTNode* impl_node = find_impl(obj.struct_val.struct_name);
+        // Chercher l'implémentation de la structure
+        // Pour l'instant, on cherche dans le programme global
+        extern ASTNode* program_root;
+        ASTNode* impl_node = NULL;
         
-        if (impl_node) {
-            ASTNode* method = find_method(impl_node, method_name);
+        if (program_root) {
+            for (int i = 0; i < program_root->program.statements->count; i++) {
+                ASTNode* stmt = program_root->program.statements->nodes[i];
+                if (stmt && stmt->type == NODE_IMPL && 
+                    strcmp(stmt->impl.name, "Rectangle") == 0) {
+                    impl_node = stmt;
+                    break;
+                }
+            }
+        }
+        
+        if (impl_node && impl_node->impl.methods) {
+            // Chercher la méthode
+            ASTNode* method = NULL;
+            for (int i = 0; i < impl_node->impl.methods->count; i++) {
+                ASTNode* m = impl_node->impl.methods->nodes[i];
+                if (m && m->type == NODE_FUNCTION && 
+                    strcmp(m->function.name, method_name) == 0) {
+                    method = m;
+                    break;
+                }
+            }
+            
             if (method) {
+                // Créer un environnement pour la méthode
                 Environment* method_env = create_env(env);
                 
-                // Lier 'self'
+                // Lier 'self' à l'objet
                 Value self_val = obj;
                 env_set(method_env, "self", self_val);
                 
@@ -643,7 +670,7 @@ case NODE_METHOD_CALL: {
                     }
                 }
                 
-                // Exécuter la méthode
+                // Exécuter le corps de la méthode
                 Value ret_val = {0};
                 for (int i = 0; i < method->function.body->count; i++) {
                     ASTNode* stmt = method->function.body->nodes[i];
@@ -658,6 +685,7 @@ case NODE_METHOD_CALL: {
                 free(method_env);
                 result = ret_val;
             } else {
+                fprintf(stderr, "Method '%s' not found\n", method_name);
                 result.type = 0;
                 result.int_val = 0;
             }
