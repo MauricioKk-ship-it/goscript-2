@@ -897,6 +897,7 @@ void interpret_program(ASTNode* program) {
     init_interpreter();
     register_native_c_functions(global);
     
+    // 1. Enregistrer TOUTES les fonctions (mais ne pas les exécuter)
     for (int i = 0; i < program->program.statements->count; i++) {
         ASTNode* stmt = program->program.statements->nodes[i];
         if (stmt->type == NODE_FUNCTION || stmt->type == NODE_PUBLIC_FUNCTION) {
@@ -908,6 +909,29 @@ void interpret_program(ASTNode* program) {
         }
     }
     
+    // 2. Enregistrer les structures (pour les méthodes)
+    for (int i = 0; i < program->program.statements->count; i++) {
+        ASTNode* stmt = program->program.statements->nodes[i];
+        if (stmt->type == NODE_STRUCT) {
+            // Enregistrer la structure
+            Value struct_val;
+            struct_val.type = 6;
+            struct_val.struct_val.struct_name = strdup(stmt->struct_def.name);
+            struct_val.struct_val.fields = NULL;
+            struct_val.struct_val.field_count = 0;
+            env_set(global, stmt->struct_def.name, struct_val);
+        }
+    }
+    
+    // 3. Enregistrer les implémentations
+    for (int i = 0; i < program->program.statements->count; i++) {
+        ASTNode* stmt = program->program.statements->nodes[i];
+        if (stmt->type == NODE_IMPL) {
+            register_impl(stmt->impl.name, stmt);
+        }
+    }
+    
+    // 4. Chercher la fonction main (point d'entrée)
     ASTNode* main_func = NULL;
     for (int i = 0; i < program->program.statements->count; i++) {
         ASTNode* stmt = program->program.statements->nodes[i];
@@ -917,17 +941,25 @@ void interpret_program(ASTNode* program) {
         }
     }
     
-    if (!main_func) {
+    // 5. Exécuter UNIQUEMENT main si elle existe
+    if (main_func) {
+        // Créer un environnement pour main
+        Environment* main_env = create_env(global);
+        
+        // Exécuter le corps de main
+        for (int i = 0; i < main_func->function.body->count; i++) {
+            int ret = evaluate_statement(main_func->function.body->nodes[i], main_env);
+            if (ret) break;
+        }
+        free(main_env);
+    } else {
+        // Si pas de main, exécuter les expressions à la racine
         for (int i = 0; i < program->program.statements->count; i++) {
             ASTNode* stmt = program->program.statements->nodes[i];
-            if (stmt->type == NODE_EXPR_STMT) evaluate_statement(stmt, global);
+            if (stmt->type == NODE_EXPR_STMT) {
+                evaluate_statement(stmt, global);
+            }
         }
-        free(global);
-        return;
-    }
-    
-    for (int i = 0; i < main_func->function.body->count; i++) {
-        if (evaluate_statement(main_func->function.body->nodes[i], global)) break;
     }
     
     free(global);
