@@ -66,7 +66,38 @@ char* resolve_module_path(char* current_file, char* import_path) {
 }
 
 // ==================== GESTION DE LA TABLE DES MODULES ====================
-
+void register_sys_functions(Environment* env) {
+    // Charger la bibliothèque sys
+    void* libsys = dlopen("./lib/libsys.so", RTLD_LAZY);
+    if (!libsys) {
+        libsys = dlopen("/usr/local/lib/goscript/libsys.so", RTLD_LAZY);
+    }
+    
+    if (libsys) {
+        // Informations système
+        register_c_function(env, "sys_get_info", dlsym(libsys, "sys_get_info"), "void*", 0);
+        register_c_function(env, "sys_getpid", dlsym(libsys, "sys_getpid"), "int", 0);
+        
+        // Environnement
+        register_c_function(env, "sys_getenv", dlsym(libsys, "sys_getenv"), "char*", 1, "char*");
+        
+        // Fichiers
+        register_c_function(env, "sys_write_file", dlsym(libsys, "sys_write_file"), "int", 2, "char*", "char*");
+        register_c_function(env, "sys_read_file", dlsym(libsys, "sys_read_file"), "char*", 1, "char*");
+        register_c_function(env, "sys_remove_file", dlsym(libsys, "sys_remove_file"), "int", 1, "char*");
+        
+        // Processus
+        register_c_function(env, "sys_system", dlsym(libsys, "sys_system"), "int", 1, "char*");
+        
+        // Temps
+        register_c_function(env, "sys_timestamp", dlsym(libsys, "sys_timestamp"), "long", 0);
+        
+        // I/O
+        register_c_function(env, "sys_input", dlsym(libsys, "sys_input"), "char*", 0);
+        register_c_function(env, "sys_print", dlsym(libsys, "sys_print"), "void", 1, "char*");
+        register_c_function(env, "sys_println", dlsym(libsys, "sys_println"), "void", 1, "char*");
+    }
+}
 ModuleRegistry* init_module_registry(void) {
     ModuleRegistry* reg = malloc(sizeof(ModuleRegistry));
     reg->modules = NULL;
