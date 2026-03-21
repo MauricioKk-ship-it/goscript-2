@@ -60,6 +60,7 @@ void call_c_function(Value* cfunc, Value* args, int arg_count, Value* result);
 void print_value(Value val, int newline);
 
 // Fonctions d'évaluation
+void init_interpreter(void); 
 Value evaluate_expr(ASTNode* node, Environment* env);
 int evaluate_statement(ASTNode* node, Environment* env);
 void interpret_program(ASTNode* program);
