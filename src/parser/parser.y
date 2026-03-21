@@ -224,17 +224,14 @@ break_statement:
     }
     ;
 for_statement:
-    TOKEN_FOR expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
-        $$ = create_while_node($2, $4);
-    }
-    | TOKEN_FOR TOKEN_IDENTIFIER TOKEN_ASSIGN expression TOKEN_SEMICOLON expression TOKEN_SEMICOLON expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
+    TOKEN_FOR TOKEN_IDENTIFIER TOKEN_ASSIGN expression TOKEN_SEMICOLON expression TOKEN_SEMICOLON expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
         ASTNode* init = create_let_node($2, NULL, $4);
         ASTNode* cond = $6;
         ASTNode* inc = create_expr_statement($8);
         $$ = create_for_node(init, cond, inc, $10);
     }
-    | TOKEN_FOR TOKEN_IDENTIFIER TOKEN_IN expression TOKEN_RANGE expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
-        $$ = create_for_range_node($2, $4, $6, $8);
+    | TOKEN_FOR expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
+        $$ = create_while_node($2, $4);
     }
     ;
 
