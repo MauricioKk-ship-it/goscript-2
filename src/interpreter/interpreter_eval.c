@@ -365,13 +365,8 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                         }
                         break;
                 }
-                // Mettre à jour l'environnement
                 env_set(env, var_name, new_val);
                 result = new_val;
-            } else if (node->binary.op == OP_ADD_ASSIGN) {
-                // Si la variable n'existe pas, on la crée avec la valeur
-                env_set(env, var_name, right_val);
-                result = right_val;
             }
         }
         break;
@@ -384,9 +379,6 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             Value right_val = evaluate_expr(node->binary.right, env);
             env_set(env, var_name, right_val);
             result = right_val;
-        } else if (node->binary.left->type == NODE_MEMBER_ACCESS) {
-            // Assignation à un membre de structure (à implémenter)
-            result = evaluate_expr(node->binary.right, env);
         }
         break;
     }
@@ -505,15 +497,6 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
         case OP_OR:
             result.type = 3;
             if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val || right.bool_val;
-            break;
-            
-        case OP_RANGE:
-            result.type = 0;
-            result.int_val = 0;
-            break;
-            
-        case OP_PIPE:
-            result = evaluate_expr(node->binary.right, env);
             break;
             
         default:
