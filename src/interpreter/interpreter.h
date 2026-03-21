@@ -10,7 +10,7 @@
 #include "../ast/ast.h"
 
 typedef struct Value {
-    int type;  // 0=int, 1=float, 2=string, 3=bool, 4=function, 5=cfunction, 6=struct
+    int type;
     union {
         int int_val;
         double float_val;
@@ -29,8 +29,11 @@ typedef struct Value {
             char* name;
         } cfunc_val;
         struct {
-            char* struct_name;   // <-- IMPORTANT POUR LES IMPLEMENTATION
-            struct Value** fields;
+            char* struct_name;
+            struct {
+                char* name;
+                struct Value* value;
+            }* fields;
             int field_count;
         } struct_val;
     };
