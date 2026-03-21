@@ -3,6 +3,7 @@
 #include <ffi.h>
 
 // Handle global pour la libc (ouvert une seule fois)
+extern ASTNode* program_root;
 static void* libc_handle = NULL;
 static int libc_initialized = 0;
 
