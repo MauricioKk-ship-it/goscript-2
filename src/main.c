@@ -6,7 +6,7 @@
 extern ASTNode* program_root;
 extern FILE* yyin;
 extern int yyparse(void);
-extern int repl_main(void);
+// extern int repl_main(void);  // Commentez temporairement
 extern void interpret_program(ASTNode* program);
 
 void print_ast(ASTNode* node, int depth);
@@ -25,18 +25,19 @@ int main(int argc, char** argv) {
             printf("Goscript - A modern scripting language\n");
             printf("Usage: %s [options] [file.gjs]\n", argv[0]);
             printf("Options:\n");
-            printf("  -i, --interactive  Run REPL (interactive mode)\n");
-            printf("  -d, --debug        Show AST\n");
-            printf("  -h, --help         Show this help\n");
+            printf("  -d, --debug    Show AST\n");
+            printf("  -h, --help     Show this help\n");
             return 0;
         } else if (argv[i][0] != '-') {
             filename = argv[i];
         }
     }
     
-    // Mode REPL si pas de fichier ou option -i
+    // Mode REPL désactivé temporairement
     if (!filename || repl_mode) {
-        return repl_main();
+        printf("REPL mode coming soon!\n");
+        printf("Please provide a file: %s <file.gjs>\n", argv[0]);
+        return 1;
     }
     
     yyin = fopen(filename, "r");
