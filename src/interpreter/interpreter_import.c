@@ -1,3 +1,4 @@
+// interpreter_import.c - version épurée
 #include "interpreter.h"
 #include <libgen.h>
 #include <sys/stat.h>
@@ -15,21 +16,17 @@ extern FILE* yyin;
 char* resolve_module_path(char* current_file, char* import_path) {
     char* result = NULL;
     
-    // Chemin absolu ?
     if (import_path[0] == '/') {
         result = strdup(import_path);
     }
-    // Chemin relatif (commence par . ou ..)
     else if (import_path[0] == '.') {
         char* dir = strdup(current_file);
         char* dirname_ptr = dirname(dir);
         
         char full_path[1024];
         if (import_path[1] == '/') {
-            // ./module
             snprintf(full_path, sizeof(full_path), "%s/%s", dirname_ptr, import_path + 2);
         } else if (import_path[1] == '.' && import_path[2] == '/') {
-            // ../module
             char* parent = dirname(dirname_ptr);
             snprintf(full_path, sizeof(full_path), "%s/%s", parent, import_path + 3);
         } else {
@@ -39,7 +36,6 @@ char* resolve_module_path(char* current_file, char* import_path) {
         result = strdup(full_path);
         free(dir);
     }
-    // Module standard
     else {
         char* paths[] = {
             "/usr/local/lib/goscript/granul/packages/",
@@ -51,7 +47,6 @@ char* resolve_module_path(char* current_file, char* import_path) {
             char full_path[1024];
             snprintf(full_path, sizeof(full_path), "%s%s", paths[i], import_path);
             
-            // Vérifier si c'est un dossier avec __self__.gjs
             char self_path[1024];
             snprintf(self_path, sizeof(self_path), "%s/__self__.gjs", full_path);
             if (access(self_path, F_OK) == 0) {
@@ -59,7 +54,6 @@ char* resolve_module_path(char* current_file, char* import_path) {
                 break;
             }
             
-            // Vérifier si c'est un fichier .gjs
             snprintf(self_path, sizeof(self_path), "%s.gjs", full_path);
             if (access(self_path, F_OK) == 0) {
                 result = strdup(self_path);
@@ -117,47 +111,17 @@ void free_module_registry(ModuleRegistry* reg) {
     free(reg);
 }
 
-// ==================== FONCTIONS DE CONSTRAINTS ====================
-
-ASTNode* create_constraints_node(char* constraint_type, ASTNodeList* list) {
-    ASTNode* node = malloc(sizeof(ASTNode));
-    node->type = NODE_CONSTRAINT;
-    node->constraint.constraint_type = strdup(constraint_type);
-    node->constraint.list = list;
-    node->constraint.int_value = 0;
-    return node;
-}
-
-ASTNode* create_timeout_constraint(int timeout_ms) {
-    ASTNode* node = malloc(sizeof(ASTNode));
-    node->type = NODE_CONSTRAINT;
-    node->constraint.constraint_type = strdup("timeout");
-    node->constraint.list = NULL;
-    node->constraint.int_value = timeout_ms;
-    return node;
-}
-
-ASTNode* merge_constraints(ASTNode* a, ASTNode* b) {
-    ASTNode* node = malloc(sizeof(ASTNode));
-    node->type = NODE_CONSTRAINT_LIST;
-    node->constraint_list.a = a;
-    node->constraint_list.b = b;
-    return node;
-}
-
 // ==================== CHARGEMENT D'UN MODULE ====================
 
 LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
                           char* current_file, char* import_path, 
                           char* alias, ASTNode* constraints) {
-    // 1. Résoudre le chemin
     char* module_path = resolve_module_path(current_file, import_path);
     if (!module_path) {
         fprintf(stderr, "Module not found: %s\n", import_path);
         return NULL;
     }
     
-    // 2. Vérifier si déjà chargé
     LoadedModule* existing = find_module(reg, module_path);
     if (existing) {
         existing->ref_count++;
@@ -165,10 +129,8 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         return existing;
     }
     
-    // 3. Créer un nouvel environnement pour le module
-    Environment* module_env = create_env(NULL);  // Environnement isolé
+    Environment* module_env = create_env(NULL);
     
-    // 4. Parser et exécuter __self__.gjs
     FILE* f = fopen(module_path, "r");
     if (!f) {
         free(module_path);
@@ -176,7 +138,6 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         return NULL;
     }
     
-    // Sauvegarder l'ancien yyin
     FILE* old_yyin = yyin;
     yyin = f;
     
@@ -191,7 +152,6 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         return NULL;
     }
     
-    // 5. Appliquer les contraintes
     LoadedModule* module = malloc(sizeof(LoadedModule));
     module->module_path = module_path;
     module->module_name = alias ? strdup(alias) : strdup(import_path);
@@ -199,29 +159,18 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
     module->status = 1;
     module->ref_count = 1;
     
-    // Initialiser les contraintes par défaut
     module->constraints.allowed_names = NULL;
     module->constraints.allowed_count = 0;
     module->constraints.timeout_ms = 0;
     module->constraints.sandbox = 0;
     module->constraints.allow_ffi = 1;
     
-    // Traiter les contraintes si présentes
-    if (constraints) {
-        process_constraints(module, constraints);
-    }
-    
-    // 6. Exécuter le module dans son environnement
-    // Note: interpret_program_in_env doit être implémentée
-    // Pour l'instant, on utilise interpret_program
     interpret_program(program_root);
     
-    // 7. Enregistrer le module
     register_module(reg, module);
     
-    // 8. Lier le module à l'environnement parent
     Value module_val;
-    module_val.type = 7;  // Type module
+    module_val.type = 7;
     module_val.int_val = (int)module;
     if (parent_env) {
         env_set(parent_env, alias ? alias : import_path, module_val);
@@ -230,46 +179,12 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
     return module;
 }
 
-// ==================== TRAITEMENT DES CONTRAINTES ====================
-
-void process_constraints(LoadedModule* module, ASTNode* constraints) {
-    if (!constraints) return;
-    
-    if (constraints->type == NODE_CONSTRAINT) {
-        if (strcmp(constraints->constraint.constraint_type, "only") == 0) {
-            // Traiter la liste "only"
-            if (constraints->constraint.list) {
-                module->constraints.allowed_count = constraints->constraint.list->count;
-                module->constraints.allowed_names = malloc(module->constraints.allowed_count * sizeof(char*));
-                for (int i = 0; i < module->constraints.allowed_count; i++) {
-                    ASTNode* name_node = constraints->constraint.list->nodes[i];
-                    if (name_node->type == NODE_IDENTIFIER) {
-                        module->constraints.allowed_names[i] = strdup(name_node->identifier.name);
-                    }
-                }
-            }
-        } else if (strcmp(constraints->constraint.constraint_type, "timeout") == 0) {
-            module->constraints.timeout_ms = constraints->constraint.int_value;
-        } else if (strcmp(constraints->constraint.constraint_type, "sandbox") == 0) {
-            module->constraints.sandbox = 1;
-        } else if (strcmp(constraints->constraint.constraint_type, "allow_ffi") == 0) {
-            module->constraints.allow_ffi = constraints->constraint.int_value;
-        }
-    } else if (constraints->type == NODE_CONSTRAINT_LIST) {
-        process_constraints(module, constraints->constraint_list.a);
-        process_constraints(module, constraints->constraint_list.b);
-    }
-}
-
 // ==================== VÉRIFICATION DES PERMISSIONS ====================
 
 int is_name_allowed(LoadedModule* module, char* name) {
     if (!module) return 1;
-    
-    // Si pas de liste "only", tout est permis
     if (module->constraints.allowed_count == 0) return 1;
     
-    // Vérifier si le nom est dans la liste
     for (int i = 0; i < module->constraints.allowed_count; i++) {
         if (strcmp(module->constraints.allowed_names[i], name) == 0) {
             return 1;
