@@ -523,15 +523,21 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             }
             break;
         }
+        
         case NODE_MEMBER_ACCESS: {
-            // Accéder à un champ d'une structure
+    // Accéder à un champ d'une structure
             Value obj = evaluate_expr(node->member.object, env);
+   
             if (obj.type == 6) { // Structure
-        // Chercher le champ par nom
-        // Pour simplifier, on suppose que les champs sont dans l'ordre
-        // Idéalement, il faudrait faire une correspondance par nom
-                if (obj.struct_val.fields && obj.struct_val.fields[0]) {
+        // Chercher le champ par son nom
+                char* member_name = node->member.member;
+        
+        // Pour l'instant, on utilise l'ordre des champs
+        // Idéalement, il faudrait chercher par nom
+                if (strcmp(member_name, "x") == 0 && obj.struct_val.fields && obj.struct_val.fields[0]) {
                     result = *obj.struct_val.fields[0];
+                } else if (strcmp(member_name, "y") == 0 && obj.struct_val.fields && obj.struct_val.fields[1]) {
+                    result = *obj.struct_val.fields[1];
                 } else {
                     result.type = 0;
                     result.int_val = 0;
@@ -539,7 +545,6 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             }
             break;
         }
-        
         case NODE_CALL: {
             char* func_name = node->call.callee->identifier.name;
             Value* func = env_get(env, func_name);
