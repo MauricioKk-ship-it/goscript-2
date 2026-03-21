@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -g -O2 -I./src -I./src/ast
+CFLAGS = -Wall -g -O2 -I./src -I./src/ast I./src/interpreter
 LDFLAGS = -lm -ldl -lffi -lreadline
 
 OBJS = scanner.o parser.o interpreter.o ast.o main.o
