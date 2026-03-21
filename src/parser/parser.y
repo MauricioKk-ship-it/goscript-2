@@ -71,6 +71,8 @@ ASTNode* program_root;
          TOKEN_MULTIPLY_ASSIGN TOKEN_DIVIDE_ASSIGN TOKEN_MODULO_ASSIGN
 
 /* Non-terminals */
+%type <node> import_constraints import_options
+%type <node_list> name_list
 %type <node> program statement expression block
 %type <node> function_decl let_decl const_decl return_statement
 %type <node> if_statement for_statement while_statement loop_statement
