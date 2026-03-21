@@ -224,6 +224,19 @@ void register_native_c_functions(Environment* env) {
     ffi_prep_cif(&putchar_func.cfunc_val.cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint32, (ffi_type*[]){&ffi_type_sint32});
     env_set(env, "putchar", putchar_func);
 }
+// cette fonction pour trouver une méthode dans une implémentation
+ASTNode* find_method(ASTNode* impl_node, char* method_name) {
+    if (!impl_node || impl_node->type != NODE_IMPL) return NULL;
+    
+    for (int i = 0; i < impl_node->impl.methods->count; i++) {
+        ASTNode* method = impl_node->impl.methods->nodes[i];
+        if (method->type == NODE_FUNCTION && 
+            strcmp(method->function.name, method_name) == 0) {
+            return method;
+        }
+    }
+    return NULL;
+}
 
 Value evaluate_expr(ASTNode* node, Environment* env) {
     Value result = {0};
@@ -498,6 +511,74 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             }
             break;
         }
+
+        case NODE_METHOD_CALL: {
+    // Évaluer l'objet (la structure)
+    Value obj = evaluate_expr(node->method_call.object, env);
+    
+    if (obj.type == 6) { // C'est une structure
+        // Chercher la méthode dans l'implémentation
+        // Pour l'instant, on cherche dans le programme global
+        char* method_name = node->method_call.method;
+        
+        // Chercher l'implémentation correspondant au type de la structure
+        ASTNode* impl_node = NULL;
+        for (int i = 0; i < program_root->program.statements->count; i++) {
+            ASTNode* stmt = program_root->program.statements->nodes[i];
+            if (stmt->type == NODE_IMPL && 
+                strcmp(stmt->impl.name, obj.struct_val.name) == 0) {
+                impl_node = stmt;
+                break;
+            }
+        }
+        
+        if (impl_node) {
+            ASTNode* method = find_method(impl_node, method_name);
+            if (method) {
+                // Créer un environnement pour la méthode
+                Environment* method_env = create_env(env);
+                
+                // Lier 'self' à l'objet
+                Value self_val = obj;
+                env_set(method_env, "self", self_val);
+                
+                // Lier les arguments
+                if (node->method_call.args) {
+                    for (int i = 0; i < node->method_call.args->count; i++) {
+                        Value arg_val = evaluate_expr(node->method_call.args->nodes[i], env);
+                        char arg_name[32];
+                        snprintf(arg_name, sizeof(arg_name), "arg%d", i);
+                        env_set(method_env, arg_name, arg_val);
+                    }
+                }
+                
+                // Exécuter le corps de la méthode
+                Value ret_val = {0};
+                for (int i = 0; i < method->function.body->count; i++) {
+                    ASTNode* stmt = method->function.body->nodes[i];
+                    if (stmt->type == NODE_RETURN) {
+                        ret_val = evaluate_expr(stmt->return_stmt.value, method_env);
+                        break;
+                    } else {
+                        evaluate_statement(stmt, method_env);
+                    }
+                }
+                
+                free(method_env);
+                result = ret_val;
+            } else {
+                fprintf(stderr, "Method '%s' not found for struct\n", method_name);
+                result.type = 0;
+                result.int_val = 0;
+            }
+        } else {
+            fprintf(stderr, "No implementation found for struct\n");
+            result.type = 0;
+            result.int_val = 0;
+        }
+    }
+    break;
+}
 case NODE_STRUCT_INIT: {
     // Créer une nouvelle structure
     result.type = 6;  // type structure
