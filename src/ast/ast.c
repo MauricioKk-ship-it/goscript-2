@@ -88,11 +88,12 @@ ASTNode* create_program_node(ASTNodeList* statements) {
     return node;
 }
 
-ASTNode* create_import_node(char* path, char* alias) {
+ASTNode* create_import_node(char* path, char* alias, ASTNode* constraints) {
     ASTNode* node = malloc(sizeof(ASTNode));
     node->type = NODE_IMPORT;
     node->import.path = strdup(path);
     node->import.alias = alias ? strdup(alias) : NULL;
+    node->import.constraints = constraints;
     return node;
 }
 
