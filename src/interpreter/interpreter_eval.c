@@ -274,6 +274,7 @@ ASTNode* find_method(ASTNode* impl_node, char* method_name) {
     return NULL;
 }
 
+        
 Value evaluate_expr(ASTNode* node, Environment* env) {
     Value result = {0};
     
@@ -556,48 +557,30 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
     break;
 }
 
+// ==================== APPEL DE MÉTHODES ====================
+
 case NODE_METHOD_CALL: {
-    // Évaluer l'objet (la structure)
     Value obj = evaluate_expr(node->method_call.object, env);
     
-    if (obj.type == 6) { // Structure
+    if (obj.type == 6 && obj.struct_val.name) {
         char* method_name = node->method_call.method;
         
-        // Chercher l'implémentation correspondante
-        ASTNode* impl_node = NULL;
-        if (program_root) {
-            for (int i = 0; i < program_root->program.statements->count; i++) {
-                ASTNode* stmt = program_root->program.statements->nodes[i];
-                if (stmt && stmt->type == NODE_IMPL) {
-                    // Pour l'instant, on compare avec le nom de la structure
-                    if (strcmp(stmt->impl.name, "Rectangle") == 0) {
-                        impl_node = stmt;
-                        break;
-                    }
-                }
-            }
-        }
+        // Chercher l'implémentation de la structure
+        ASTNode* impl_node = find_impl(obj.struct_val.name);
         
-        if (impl_node && impl_node->impl.methods) {
-            // Chercher la méthode
-            ASTNode* method = NULL;
-            for (int i = 0; i < impl_node->impl.methods->count; i++) {
-                ASTNode* m = impl_node->impl.methods->nodes[i];
-                if (m && m->type == NODE_FUNCTION && 
-                    strcmp(m->function.name, method_name) == 0) {
-                    method = m;
-                    break;
-                }
-            }
+        if (impl_node) {
+            // Chercher la méthode dans l'implémentation
+            ASTNode* method = find_method(impl_node, method_name);
             
             if (method) {
                 // Créer un environnement pour la méthode
                 Environment* method_env = create_env(env);
                 
-                // Lier 'self' à l'objet
-                env_set(method_env, "self", obj);
+                // Lier 'self' à l'objet courant
+                Value self_val = obj;
+                env_set(method_env, "self", self_val);
                 
-                // Lier les arguments
+                // Lier les arguments passés à la méthode
                 if (node->method_call.args) {
                     for (int i = 0; i < node->method_call.args->count; i++) {
                         Value arg_val = evaluate_expr(node->method_call.args->nodes[i], env);
@@ -623,42 +606,80 @@ case NODE_METHOD_CALL: {
                 free(method_env);
                 result = ret_val;
             } else {
+                // Méthode non trouvée
                 result.type = 0;
                 result.int_val = 0;
             }
         } else {
+            // Aucune implémentation trouvée
             result.type = 0;
             result.int_val = 0;
         }
+    } else {
+        result.type = 0;
+        result.int_val = 0;
     }
     break;
 }
+// ==================== ACCÈS AUX MEMBRES DE STRUCTURE ====================
 
 case NODE_MEMBER_ACCESS: {
     Value obj = evaluate_expr(node->member.object, env);
     
     if (obj.type == 6 && obj.struct_val.fields) {
-        // Pour l'instant, on accède par index (ordre de déclaration)
-        // x est le premier champ (index 0), y est le deuxième (index 1)
         char* member_name = node->member.member;
         
-        if (strcmp(member_name, "x") == 0) {
+        // Accès par nom de champ (ordre de déclaration)
+        if (strcmp(member_name, "width") == 0) {
             if (obj.struct_val.fields[0]) {
                 result = *obj.struct_val.fields[0];
-            } else {
-                result.type = 0;
-                result.int_val = 0;
+            }
+        } else if (strcmp(member_name, "height") == 0) {
+            if (obj.struct_val.fields[1]) {
+                result = *obj.struct_val.fields[1];
+            }
+        } else if (strcmp(member_name, "x") == 0) {
+            if (obj.struct_val.fields[0]) {
+                result = *obj.struct_val.fields[0];
             }
         } else if (strcmp(member_name, "y") == 0) {
             if (obj.struct_val.fields[1]) {
                 result = *obj.struct_val.fields[1];
-            } else {
-                result.type = 0;
-                result.int_val = 0;
             }
         } else {
             result.type = 0;
             result.int_val = 0;
+        }
+    } else {
+        result.type = 0;
+        result.int_val = 0;
+    }
+    break;
+}
+
+        // ==================== INITIALISATION DES STRUCTURES ====================
+
+case NODE_STRUCT_INIT: {
+    result.type = 6;  // Type structure
+    result.struct_val.name = strdup(node->struct_init.name);
+    
+    int field_count = 0;
+    if (node->struct_init.fields) {
+        field_count = node->struct_init.fields->count;
+    }
+    
+    result.struct_val.field_count = field_count;
+    result.struct_val.fields = malloc(field_count * sizeof(Value*));
+    
+    // Initialiser chaque champ avec la valeur évaluée
+    for (int i = 0; i < field_count; i++) {
+        ASTNode* field_node = node->struct_init.fields->nodes[i];
+        if (field_node->type == NODE_FIELD_INIT) {
+            Value* field_val = malloc(sizeof(Value));
+            *field_val = evaluate_expr(field_node->field_init.value, env);
+            result.struct_val.fields[i] = field_val;
+        } else {
+            result.struct_val.fields[i] = NULL;
         }
     }
     break;
@@ -899,4 +920,15 @@ void interpret_program(ASTNode* program) {
 
 void init_interpreter() {
     init_libc();
+}
+// ==================== NETTOYAGE DE LA MÉMOIRE ====================
+
+void free_impl_table() {
+    for (int i = 0; i < impl_count; i++) {
+        free(impl_table[i].struct_name);
+    }
+    free(impl_table);
+    impl_table = NULL;
+    impl_count = 0;
+    impl_capacity = 0;
 }
