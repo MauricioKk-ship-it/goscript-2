@@ -408,6 +408,8 @@ ASTNode* create_match_case_node(ASTNode* pattern, ASTNode* value);
 ASTNode* create_return_node(ASTNode* value);
 
 /* Expressions */
+ASTNode* create_constraints_node(char* type, ASTNodeList* list);
+ASTNode* merge_constraints(ASTNode* a, ASTNode* b);
 ASTNode* create_expr_statement(ASTNode* expr);
 ASTNode* create_binary_op(ASTNode* left, Operator op, ASTNode* right);
 ASTNode* create_unary_op(Operator op, ASTNode* operand);
