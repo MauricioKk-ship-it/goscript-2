@@ -24,7 +24,10 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             result.type = 1;
             result.float_val = node->float_val.value;
             break;
-            
+
+        case NODE_BREAK: {
+            return 2; // Signal break
+        }
         case NODE_STRING:
             result.type = 2;
             result.string_val = strdup(node->string_val.value);
