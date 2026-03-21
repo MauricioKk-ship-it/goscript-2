@@ -18,6 +18,12 @@ ffi_type* get_ffi_type(char* type_name) {
 }
 
 void register_c_function(Environment* env, char* name, void* func_ptr, char* ret_type, int arg_count, ...) {
+    if (arg_count < 0) {
+        // Fonctions variadiques non supportées par FFI
+        fprintf(stderr, "Warning: variadic function %s not supported via FFI\n", name);
+        return;
+    }
+    
     Value func_val;
     func_val.type = 5;
     func_val.cfunc_val.func_ptr = func_ptr;
@@ -35,8 +41,15 @@ void register_c_function(Environment* env, char* name, void* func_ptr, char* ret
     }
     va_end(args);
     
-    ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, arg_count,
+    int result = ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, arg_count,
                  func_val.cfunc_val.ret_type, func_val.cfunc_val.arg_types);
+    
+    if (result != FFI_OK) {
+        fprintf(stderr, "Error preparing CIF for function %s\n", name);
+        free(func_val.cfunc_val.arg_types);
+        free(func_val.cfunc_val.name);
+        return;
+    }
     
     env_set(env, name, func_val);
 }
