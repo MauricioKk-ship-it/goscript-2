@@ -29,7 +29,8 @@ typedef struct Value {
             char* name;
         } cfunc_val;
         struct {
-            struct Value** fields;  // Tableau de pointeurs vers Value
+            char* struct_name;   // <-- AJOUTEZ CE CHAMP
+            struct Value** fields;
             int field_count;
         } struct_val;
     };
