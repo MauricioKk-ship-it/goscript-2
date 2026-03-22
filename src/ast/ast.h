@@ -246,6 +246,7 @@ typedef struct ASTNode {
         struct {
             char* name;
             ASTNodeList* fields;
+            int is_public;
         } struct_def;
         struct {
             char* name;
@@ -262,6 +263,7 @@ typedef struct ASTNode {
         struct {
             char* name;
             ASTNodeList* methods;
+            int is_public;
         } impl;
         
         /* Expression statement */
