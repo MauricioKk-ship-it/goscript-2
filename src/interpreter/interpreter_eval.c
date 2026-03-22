@@ -867,7 +867,7 @@ case NODE_METHOD_CALL: {
     
     return result;
 }
-int evaluate_statement(ASTNode* node, Environment* env) {
+int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
     switch (node->type) {
         case NODE_LET: {
             Value val = evaluate_expr(node->var_decl.value, env);
