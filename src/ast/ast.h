@@ -207,10 +207,7 @@ typedef struct ASTNode {
             struct ASTNode* left;
             struct ASTNode* right;
         } binary;
-/* Unsafe block */
-struct {
-    ASTNodeList* body;
-} unsafe_block;
+
         
         /* Opérations unaires */
         struct {
