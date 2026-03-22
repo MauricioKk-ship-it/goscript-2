@@ -292,6 +292,23 @@ ASTNode* create_float_node(double value) {
     return node;
 }
 
+ASTNode* create_muts_node(char* name, ASTNode* type, ASTNode* value) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_MUTS;
+    node->muts_decl.name = strdup(name);
+    node->muts_decl.var_type = type;
+    node->muts_decl.value = value;
+    node->muts_decl.is_public = 0;
+    return node;
+}
+
+// Version publique
+ASTNode* create_public_muts_node(char* name, ASTNode* type, ASTNode* value) {
+    ASTNode* node = create_muts_node(name, type, value);
+    node->muts_decl.is_public = 1;
+    return node;
+}
+
 ASTNode* create_string_node(char* value) {
     ASTNode* node = malloc(sizeof(ASTNode));
     node->type = NODE_STRING;
