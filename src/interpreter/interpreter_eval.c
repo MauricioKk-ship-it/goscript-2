@@ -644,11 +644,14 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
         }
         
         // ==================== ACCÈS STATIQUE (MODULE) ====================
-        case NODE_STATIC_ACCESS: {
+       case NODE_STATIC_ACCESS: {
     Value obj = evaluate_expr(node->static_access.object, env);
     
+    // ==================== AMÉLIORATION 2 ====================
     if (obj.type == 7) {  // Type Module
         LoadedModule* mod = (LoadedModule*)obj.int_val;
+        
+        // Vérifier que le module est correctement initialisé
         if (!mod || !mod->env) {
             fprintf(stderr, "Error: Module not initialized\n");
             result.type = 0;
@@ -657,6 +660,8 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
         }
         
         char* member_name = node->static_access.member;
+        
+        // Chercher le symbole dans l'environnement du module
         Value* val = env_get(mod->env, member_name);
         
         if (val) {
@@ -667,11 +672,14 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             result.type = 0;
             result.int_val = 0;
         }
-    } else {
+    }
+    // ==================== FIN AMÉLIORATION 2 ====================
+    else {
         result.type = 0;
         result.int_val = 0;
     }
     break;
+}
 }
         // ==================== APPEL DE MÉTHODE ====================
 case NODE_METHOD_CALL: {
