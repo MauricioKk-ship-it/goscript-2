@@ -981,7 +981,46 @@ void interpret_program(ASTNode* program) {
     Environment* global = create_env(NULL);
     init_interpreter();
     register_native_c_functions(global);
-    get_module_registry();
+    
+    // ============================================
+    // CHARGEMENT AUTOMATIQUE DU MODULE BUILTIN
+    // ============================================
+    ModuleRegistry* reg = get_module_registry();
+    
+    // Chercher le chemin du fichier builtin
+    char* builtin_path = resolve_module_path(NULL, "__builtin__");
+    if (!builtin_path) {
+        // Essayer dans ./lib
+        builtin_path = resolve_module_path(NULL, "./lib/__builtin__");
+    }
+    
+    if (builtin_path) {
+        LoadedModule* builtin = load_module(
+            reg, 
+            global, 
+            builtin_path,  // current_file
+            "__builtin__", // import_path
+            NULL,          // alias
+            NULL           // constraints
+        );
+        
+        if (builtin && builtin->env) {
+            // Fusionner tous les symboles du builtin dans l'environnement global
+            for (int i = 0; i < builtin->env->var_count; i++) {
+                env_set(global, builtin->env->vars[i].name, builtin->env->vars[i].value);
+            }
+            info("Built-in module loaded successfully");
+        } else {
+            fprintf(stderr, "Warning: Could not load built-in module\n");
+        }
+        free(builtin_path);
+    } else {
+        fprintf(stderr, "Warning: Built-in module not found\n");
+    }
+    
+    // ============================================
+    // ENREGISTREMENT DES STRUCTURES ET FONCTIONS
+    // ============================================
     
     // 1. Enregistrer les fonctions
     for (int i = 0; i < program->program.statements->count; i++) {
@@ -1016,7 +1055,7 @@ void interpret_program(ASTNode* program) {
         }
     }
     
-    // === NOUVEAU : 3.5 Exécuter les imports ===
+    // 4. Exécuter les imports
     for (int i = 0; i < program->program.statements->count; i++) {
         ASTNode* stmt = program->program.statements->nodes[i];
         if (stmt->type == NODE_IMPORT) {
@@ -1024,16 +1063,17 @@ void interpret_program(ASTNode* program) {
         }
     }
     
-    // 4. Chercher la fonction main
+    // 5. Chercher la fonction main
     ASTNode* main_func = NULL;
     for (int i = 0; i < program->program.statements->count; i++) {
         ASTNode* stmt = program->program.statements->nodes[i];
         if (stmt->type == NODE_FUNCTION && strcmp(stmt->function.name, "main") == 0) {
             main_func = stmt;
-            break;        }
+            break;
+        }
     }
-   
-    // 5. Exécuter main
+    
+    // 6. Exécuter main
     if (main_func) {
         Environment* main_env = create_env(global);
         for (int i = 0; i < main_func->function.body->count; i++) {
@@ -1052,7 +1092,6 @@ void interpret_program(ASTNode* program) {
     
     free(global);
 }
-
 // ==================== NETTOYAGE DE LA MÉMOIRE ====================
 
 void free_impl_table() {
