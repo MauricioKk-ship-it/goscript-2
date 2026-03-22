@@ -170,94 +170,478 @@ void print_value(Value val, int newline) {
 void register_native_c_functions(Environment* env) {
     init_libc();
     
-    if (libc_handle) {
-        void* strlen_ptr = dlsym(libc_handle, "strlen");
-        if (strlen_ptr) {
-            ffi_type* arg_types[] = {&ffi_type_pointer};
-            Value func_val;
-            func_val.type = 5;
-            func_val.cfunc_val.func_ptr = strlen_ptr;
-            func_val.cfunc_val.ret_type = &ffi_type_sint32;
-            func_val.cfunc_val.arg_count = 1;
-            func_val.cfunc_val.arg_types = malloc(sizeof(ffi_type*));
-            func_val.cfunc_val.arg_types[0] = &ffi_type_pointer;
-            ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint32, arg_types);
-            env_set(env, "strlen", func_val);
-        }
-        
-        void* strcmp_ptr = dlsym(libc_handle, "strcmp");
-        if (strcmp_ptr) {
-            ffi_type* arg_types[] = {&ffi_type_pointer, &ffi_type_pointer};
-            Value func_val;
-            func_val.type = 5;
-            func_val.cfunc_val.func_ptr = strcmp_ptr;
-            func_val.cfunc_val.ret_type = &ffi_type_sint32;
-            func_val.cfunc_val.arg_count = 2;
-            func_val.cfunc_val.arg_types = malloc(2 * sizeof(ffi_type*));
-            func_val.cfunc_val.arg_types[0] = &ffi_type_pointer;
-            func_val.cfunc_val.arg_types[1] = &ffi_type_pointer;
-            ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, 2, &ffi_type_sint32, arg_types);
-            env_set(env, "strcmp", func_val);
-        }
-        
-        void* atoi_ptr = dlsym(libc_handle, "atoi");
-        if (atoi_ptr) {
-            ffi_type* arg_types[] = {&ffi_type_pointer};
-            Value func_val;
-            func_val.type = 5;
-            func_val.cfunc_val.func_ptr = atoi_ptr;
-            func_val.cfunc_val.ret_type = &ffi_type_sint32;
-            func_val.cfunc_val.arg_count = 1;
-            func_val.cfunc_val.arg_types = malloc(sizeof(ffi_type*));
-            func_val.cfunc_val.arg_types[0] = &ffi_type_pointer;
-            ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint32, arg_types);
-            env_set(env, "atoi", func_val);
-        }
-        
-        void* system_ptr = dlsym(libc_handle, "system");
-        if (system_ptr) {
-            ffi_type* arg_types[] = {&ffi_type_pointer};
-            Value func_val;
-            func_val.type = 5;
-            func_val.cfunc_val.func_ptr = system_ptr;
-            func_val.cfunc_val.ret_type = &ffi_type_sint32;
-            func_val.cfunc_val.arg_count = 1;
-            func_val.cfunc_val.arg_types = malloc(sizeof(ffi_type*));
-            func_val.cfunc_val.arg_types[0] = &ffi_type_pointer;
-            ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, 1, &ffi_type_sint32, arg_types);
-            env_set(env, "system", func_val);
-        }
-        
-        void* malloc_ptr = dlsym(libc_handle, "malloc");
-        if (malloc_ptr) {
-            ffi_type* arg_types[] = {&ffi_type_sint32};
-            Value func_val;
-            func_val.type = 5;
-            func_val.cfunc_val.func_ptr = malloc_ptr;
-            func_val.cfunc_val.ret_type = &ffi_type_pointer;
-            func_val.cfunc_val.arg_count = 1;
-            func_val.cfunc_val.arg_types = malloc(sizeof(ffi_type*));
-            func_val.cfunc_val.arg_types[0] = &ffi_type_sint32;
-            ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, 1, &ffi_type_pointer, arg_types);
-            env_set(env, "malloc", func_val);
-        }
-        
-        void* free_ptr = dlsym(libc_handle, "free");
-        if (free_ptr) {
-            ffi_type* arg_types[] = {&ffi_type_pointer};
-            Value func_val;
-            func_val.type = 5;
-            func_val.cfunc_val.func_ptr = free_ptr;
-            func_val.cfunc_val.ret_type = &ffi_type_void;
-            func_val.cfunc_val.arg_count = 1;
-            func_val.cfunc_val.arg_types = malloc(sizeof(ffi_type*));
-            func_val.cfunc_val.arg_types[0] = &ffi_type_pointer;
-            ffi_prep_cif(&func_val.cfunc_val.cif, FFI_DEFAULT_ABI, 1, &ffi_type_void, arg_types);
-            env_set(env, "free", func_val);
-        }
+    if (!libc_handle) {
+        fprintf(stderr, "Warning: libc handle not available\n");
+        return;
     }
     
-    // puts et putchar
+    // ============================================
+    // STRING FUNCTIONS (string.h)
+    // ============================================
+    
+    void* strlen_ptr = dlsym(libc_handle, "strlen");
+    if (strlen_ptr) register_c_function(env, "strlen_c", strlen_ptr, "int", 1, "string");
+    
+    void* strcmp_ptr = dlsym(libc_handle, "strcmp");
+    if (strcmp_ptr) register_c_function(env, "strcmp_c", strcmp_ptr, "int", 2, "string", "string");
+    
+    void* strncmp_ptr = dlsym(libc_handle, "strncmp");
+    if (strncmp_ptr) register_c_function(env, "strncmp_c", strncmp_ptr, "int", 3, "string", "string", "int");
+    
+    void* strcpy_ptr = dlsym(libc_handle, "strcpy");
+    if (strcpy_ptr) register_c_function(env, "strcpy_c", strcpy_ptr, "string", 2, "string", "string");
+    
+    void* strncpy_ptr = dlsym(libc_handle, "strncpy");
+    if (strncpy_ptr) register_c_function(env, "strncpy_c", strncpy_ptr, "string", 3, "string", "string", "int");
+    
+    void* strcat_ptr = dlsym(libc_handle, "strcat");
+    if (strcat_ptr) register_c_function(env, "strcat_c", strcat_ptr, "string", 2, "string", "string");
+    
+    void* strncat_ptr = dlsym(libc_handle, "strncat");
+    if (strncat_ptr) register_c_function(env, "strncat_c", strncat_ptr, "string", 3, "string", "string", "int");
+    
+    void* strchr_ptr = dlsym(libc_handle, "strchr");
+    if (strchr_ptr) register_c_function(env, "strchr_c", strchr_ptr, "string", 2, "string", "int");
+    
+    void* strrchr_ptr = dlsym(libc_handle, "strrchr");
+    if (strrchr_ptr) register_c_function(env, "strrchr_c", strrchr_ptr, "string", 2, "string", "int");
+    
+    void* strstr_ptr = dlsym(libc_handle, "strstr");
+    if (strstr_ptr) register_c_function(env, "strstr_c", strstr_ptr, "string", 2, "string", "string");
+    
+    void* strtok_ptr = dlsym(libc_handle, "strtok");
+    if (strtok_ptr) register_c_function(env, "strtok_c", strtok_ptr, "string", 2, "string", "string");
+    
+    void* strspn_ptr = dlsym(libc_handle, "strspn");
+    if (strspn_ptr) register_c_function(env, "strspn_c", strspn_ptr, "int", 2, "string", "string");
+    
+    void* strcspn_ptr = dlsym(libc_handle, "strcspn");
+    if (strcspn_ptr) register_c_function(env, "strcspn_c", strcspn_ptr, "int", 2, "string", "string");
+    
+    void* strpbrk_ptr = dlsym(libc_handle, "strpbrk");
+    if (strpbrk_ptr) register_c_function(env, "strpbrk_c", strpbrk_ptr, "string", 2, "string", "string");
+    
+    void* strdup_ptr = dlsym(libc_handle, "strdup");
+    if (strdup_ptr) register_c_function(env, "strdup_c", strdup_ptr, "string", 1, "string");
+    
+    // ============================================
+    // MEMORY FUNCTIONS (string.h)
+    // ============================================
+    
+    void* memcpy_ptr = dlsym(libc_handle, "memcpy");
+    if (memcpy_ptr) register_c_function(env, "memcpy_c", memcpy_ptr, "int", 3, "int", "int", "int");
+    
+    void* memmove_ptr = dlsym(libc_handle, "memmove");
+    if (memmove_ptr) register_c_function(env, "memmove_c", memmove_ptr, "int", 3, "int", "int", "int");
+    
+    void* memset_ptr = dlsym(libc_handle, "memset");
+    if (memset_ptr) register_c_function(env, "memset_c", memset_ptr, "int", 3, "int", "int", "int");
+    
+    void* memcmp_ptr = dlsym(libc_handle, "memcmp");
+    if (memcmp_ptr) register_c_function(env, "memcmp_c", memcmp_ptr, "int", 3, "int", "int", "int");
+    
+    void* memchr_ptr = dlsym(libc_handle, "memchr");
+    if (memchr_ptr) register_c_function(env, "memchr_c", memchr_ptr, "int", 3, "int", "int", "int");
+    
+    // ============================================
+    // STDIO FUNCTIONS (stdio.h)
+    // ============================================
+    
+    void* fopen_ptr = dlsym(libc_handle, "fopen");
+    if (fopen_ptr) register_c_function(env, "fopen_c", fopen_ptr, "int", 2, "string", "string");
+    
+    void* fclose_ptr = dlsym(libc_handle, "fclose");
+    if (fclose_ptr) register_c_function(env, "fclose_c", fclose_ptr, "int", 1, "int");
+    
+    void* fread_ptr = dlsym(libc_handle, "fread");
+    if (fread_ptr) register_c_function(env, "fread_c", fread_ptr, "int", 4, "int", "int", "int", "int");
+    
+    void* fwrite_ptr = dlsym(libc_handle, "fwrite");
+    if (fwrite_ptr) register_c_function(env, "fwrite_c", fwrite_ptr, "int", 4, "int", "int", "int", "int");
+    
+    void* fseek_ptr = dlsym(libc_handle, "fseek");
+    if (fseek_ptr) register_c_function(env, "fseek_c", fseek_ptr, "int", 3, "int", "int", "int");
+    
+    void* ftell_ptr = dlsym(libc_handle, "ftell");
+    if (ftell_ptr) register_c_function(env, "ftell_c", ftell_ptr, "int", 1, "int");
+    
+    void* rewind_ptr = dlsym(libc_handle, "rewind");
+    if (rewind_ptr) register_c_function(env, "rewind_c", rewind_ptr, "void", 1, "int");
+    
+    void* fgetc_ptr = dlsym(libc_handle, "fgetc");
+    if (fgetc_ptr) register_c_function(env, "fgetc_c", fgetc_ptr, "int", 1, "int");
+    
+    void* fputc_ptr = dlsym(libc_handle, "fputc");
+    if (fputc_ptr) register_c_function(env, "fputc_c", fputc_ptr, "int", 2, "int", "int");
+    
+    void* fgets_ptr = dlsym(libc_handle, "fgets");
+    if (fgets_ptr) register_c_function(env, "fgets_c", fgets_ptr, "string", 3, "string", "int", "int");
+    
+    void* fputs_ptr = dlsym(libc_handle, "fputs");
+    if (fputs_ptr) register_c_function(env, "fputs_c", fputs_ptr, "int", 2, "string", "int");
+    
+    void* fprintf_ptr = dlsym(libc_handle, "fprintf");
+    if (fprintf_ptr) register_c_function(env, "fprintf_c", fprintf_ptr, "int", 2, "int", "string");
+    
+    void* printf_ptr = dlsym(libc_handle, "printf");
+    if (printf_ptr) register_c_function(env, "printf_c", printf_ptr, "int", 1, "string");
+    
+    void* sprintf_ptr = dlsym(libc_handle, "sprintf");
+    if (sprintf_ptr) register_c_function(env, "sprintf_c", sprintf_ptr, "int", 2, "string", "string");
+    
+    void* scanf_ptr = dlsym(libc_handle, "scanf");
+    if (scanf_ptr) register_c_function(env, "scanf_c", scanf_ptr, "int", 1, "string");
+    
+    void* sscanf_ptr = dlsym(libc_handle, "sscanf");
+    if (sscanf_ptr) register_c_function(env, "sscanf_c", sscanf_ptr, "int", 3, "string", "string", "int");
+    
+    void* remove_ptr = dlsym(libc_handle, "remove");
+    if (remove_ptr) register_c_function(env, "remove_c", remove_ptr, "int", 1, "string");
+    
+    void* rename_ptr = dlsym(libc_handle, "rename");
+    if (rename_ptr) register_c_function(env, "rename_c", rename_ptr, "int", 2, "string", "string");
+    
+    void* tmpfile_ptr = dlsym(libc_handle, "tmpfile");
+    if (tmpfile_ptr) register_c_function(env, "tmpfile_c", tmpfile_ptr, "int", 0);
+    
+    void* tmpnam_ptr = dlsym(libc_handle, "tmpnam");
+    if (tmpnam_ptr) register_c_function(env, "tmpnam_c", tmpnam_ptr, "string", 1, "string");
+    
+    // ============================================
+    // STD LIB FUNCTIONS (stdlib.h)
+    // ============================================
+    
+    void* atoi_ptr = dlsym(libc_handle, "atoi");
+    if (atoi_ptr) register_c_function(env, "atoi_c", atoi_ptr, "int", 1, "string");
+    
+    void* atol_ptr = dlsym(libc_handle, "atol");
+    if (atol_ptr) register_c_function(env, "atol_c", atol_ptr, "int", 1, "string");
+    
+    void* atoll_ptr = dlsym(libc_handle, "atoll");
+    if (atoll_ptr) register_c_function(env, "atoll_c", atoll_ptr, "int", 1, "string");
+    
+    void* atof_ptr = dlsym(libc_handle, "atof");
+    if (atof_ptr) register_c_function(env, "atof_c", atof_ptr, "double", 1, "string");
+    
+    void* strtol_ptr = dlsym(libc_handle, "strtol");
+    if (strtol_ptr) register_c_function(env, "strtol_c", strtol_ptr, "int", 3, "string", "int", "int");
+    
+    void* strtoll_ptr = dlsym(libc_handle, "strtoll");
+    if (strtoll_ptr) register_c_function(env, "strtoll_c", strtoll_ptr, "int", 3, "string", "int", "int");
+    
+    void* strtoul_ptr = dlsym(libc_handle, "strtoul");
+    if (strtoul_ptr) register_c_function(env, "strtoul_c", strtoul_ptr, "int", 3, "string", "int", "int");
+    
+    void* strtod_ptr = dlsym(libc_handle, "strtod");
+    if (strtod_ptr) register_c_function(env, "strtod_c", strtod_ptr, "double", 2, "string", "int");
+    
+    void* malloc_ptr = dlsym(libc_handle, "malloc");
+    if (malloc_ptr) register_c_function(env, "malloc_c", malloc_ptr, "int", 1, "int");
+    
+    void* calloc_ptr = dlsym(libc_handle, "calloc");
+    if (calloc_ptr) register_c_function(env, "calloc_c", calloc_ptr, "int", 2, "int", "int");
+    
+    void* realloc_ptr = dlsym(libc_handle, "realloc");
+    if (realloc_ptr) register_c_function(env, "realloc_c", realloc_ptr, "int", 2, "int", "int");
+    
+    void* free_ptr = dlsym(libc_handle, "free");
+    if (free_ptr) register_c_function(env, "free_c", free_ptr, "void", 1, "int");
+    
+    void* abort_ptr = dlsym(libc_handle, "abort");
+    if (abort_ptr) register_c_function(env, "abort_c", abort_ptr, "void", 0);
+    
+    void* exit_ptr = dlsym(libc_handle, "exit");
+    if (exit_ptr) register_c_function(env, "exit_c", exit_ptr, "void", 1, "int");
+    
+    void* _exit_ptr = dlsym(libc_handle, "_exit");
+    if (_exit_ptr) register_c_function(env, "_exit_c", _exit_ptr, "void", 1, "int");
+    
+    void* system_ptr = dlsym(libc_handle, "system");
+    if (system_ptr) register_c_function(env, "system_c", system_ptr, "int", 1, "string");
+    
+    void* getenv_ptr = dlsym(libc_handle, "getenv");
+    if (getenv_ptr) register_c_function(env, "getenv_c", getenv_ptr, "string", 1, "string");
+    
+    void* setenv_ptr = dlsym(libc_handle, "setenv");
+    if (setenv_ptr) register_c_function(env, "setenv_c", setenv_ptr, "int", 3, "string", "string", "int");
+    
+    void* unsetenv_ptr = dlsym(libc_handle, "unsetenv");
+    if (unsetenv_ptr) register_c_function(env, "unsetenv_c", unsetenv_ptr, "int", 1, "string");
+    
+    void* clearenv_ptr = dlsym(libc_handle, "clearenv");
+    if (clearenv_ptr) register_c_function(env, "clearenv_c", clearenv_ptr, "int", 0);
+    
+    void* qsort_ptr = dlsym(libc_handle, "qsort");
+    if (qsort_ptr) register_c_function(env, "qsort_c", qsort_ptr, "void", 4, "int", "int", "int", "int");
+    
+    void* bsearch_ptr = dlsym(libc_handle, "bsearch");
+    if (bsearch_ptr) register_c_function(env, "bsearch_c", bsearch_ptr, "int", 5, "int", "int", "int", "int", "int");
+    
+    void* rand_ptr = dlsym(libc_handle, "rand");
+    if (rand_ptr) register_c_function(env, "rand_c", rand_ptr, "int", 0);
+    
+    void* srand_ptr = dlsym(libc_handle, "srand");
+    if (srand_ptr) register_c_function(env, "srand_c", srand_ptr, "void", 1, "int");
+    
+    void* rand_r_ptr = dlsym(libc_handle, "rand_r");
+    if (rand_r_ptr) register_c_function(env, "rand_r_c", rand_r_ptr, "int", 1, "int");
+    
+    // ============================================
+    // TIME FUNCTIONS (time.h)
+    // ============================================
+    
+    void* time_ptr = dlsym(libc_handle, "time");
+    if (time_ptr) register_c_function(env, "time_c", time_ptr, "int", 1, "int");
+    
+    void* clock_ptr = dlsym(libc_handle, "clock");
+    if (clock_ptr) register_c_function(env, "clock_c", clock_ptr, "int", 0);
+    
+    void* difftime_ptr = dlsym(libc_handle, "difftime");
+    if (difftime_ptr) register_c_function(env, "difftime_c", difftime_ptr, "double", 2, "int", "int");
+    
+    void* mktime_ptr = dlsym(libc_handle, "mktime");
+    if (mktime_ptr) register_c_function(env, "mktime_c", mktime_ptr, "int", 1, "int");
+    
+    void* asctime_ptr = dlsym(libc_handle, "asctime");
+    if (asctime_ptr) register_c_function(env, "asctime_c", asctime_ptr, "string", 1, "int");
+    
+    void* ctime_ptr = dlsym(libc_handle, "ctime");
+    if (ctime_ptr) register_c_function(env, "ctime_c", ctime_ptr, "string", 1, "int");
+    
+    void* gmtime_ptr = dlsym(libc_handle, "gmtime");
+    if (gmtime_ptr) register_c_function(env, "gmtime_c", gmtime_ptr, "int", 1, "int");
+    
+    void* localtime_ptr = dlsym(libc_handle, "localtime");
+    if (localtime_ptr) register_c_function(env, "localtime_c", localtime_ptr, "int", 1, "int");
+    
+    void* strftime_ptr = dlsym(libc_handle, "strftime");
+    if (strftime_ptr) register_c_function(env, "strftime_c", strftime_ptr, "int", 5, "string", "int", "string", "int", "int");
+    
+    void* nanosleep_ptr = dlsym(libc_handle, "nanosleep");
+    if (nanosleep_ptr) register_c_function(env, "nanosleep_c", nanosleep_ptr, "int", 2, "int", "int");
+    
+    // ============================================
+    // UNISTD FUNCTIONS (unistd.h)
+    // ============================================
+    
+    void* getpid_ptr = dlsym(libc_handle, "getpid");
+    if (getpid_ptr) register_c_function(env, "getpid_c", getpid_ptr, "int", 0);
+    
+    void* getppid_ptr = dlsym(libc_handle, "getppid");
+    if (getppid_ptr) register_c_function(env, "getppid_c", getppid_ptr, "int", 0);
+    
+    void* getuid_ptr = dlsym(libc_handle, "getuid");
+    if (getuid_ptr) register_c_function(env, "getuid_c", getuid_ptr, "int", 0);
+    
+    void* geteuid_ptr = dlsym(libc_handle, "geteuid");
+    if (geteuid_ptr) register_c_function(env, "geteuid_c", geteuid_ptr, "int", 0);
+    
+    void* getgid_ptr = dlsym(libc_handle, "getgid");
+    if (getgid_ptr) register_c_function(env, "getgid_c", getgid_ptr, "int", 0);
+    
+    void* getegid_ptr = dlsym(libc_handle, "getegid");
+    if (getegid_ptr) register_c_function(env, "getegid_c", getegid_ptr, "int", 0);
+    
+    void* getcwd_ptr = dlsym(libc_handle, "getcwd");
+    if (getcwd_ptr) register_c_function(env, "getcwd_c", getcwd_ptr, "string", 2, "string", "int");
+    
+    void* chdir_ptr = dlsym(libc_handle, "chdir");
+    if (chdir_ptr) register_c_function(env, "chdir_c", chdir_ptr, "int", 1, "string");
+    
+    void* sleep_ptr = dlsym(libc_handle, "sleep");
+    if (sleep_ptr) register_c_function(env, "sleep_c", sleep_ptr, "int", 1, "int");
+    
+    void* usleep_ptr = dlsym(libc_handle, "usleep");
+    if (usleep_ptr) register_c_function(env, "usleep_c", usleep_ptr, "int", 1, "int");
+    
+    void* fork_ptr = dlsym(libc_handle, "fork");
+    if (fork_ptr) register_c_function(env, "fork_c", fork_ptr, "int", 0);
+    
+    void* execv_ptr = dlsym(libc_handle, "execv");
+    if (execv_ptr) register_c_function(env, "execv_c", execv_ptr, "int", 2, "string", "int");
+    
+    void* execvp_ptr = dlsym(libc_handle, "execvp");
+    if (execvp_ptr) register_c_function(env, "execvp_c", execvp_ptr, "int", 2, "string", "int");
+    
+    void* wait_ptr = dlsym(libc_handle, "wait");
+    if (wait_ptr) register_c_function(env, "wait_c", wait_ptr, "int", 1, "int");
+    
+    void* waitpid_ptr = dlsym(libc_handle, "waitpid");
+    if (waitpid_ptr) register_c_function(env, "waitpid_c", waitpid_ptr, "int", 3, "int", "int", "int");
+    
+    void* pipe_ptr = dlsym(libc_handle, "pipe");
+    if (pipe_ptr) register_c_function(env, "pipe_c", pipe_ptr, "int", 1, "int");
+    
+    void* read_ptr = dlsym(libc_handle, "read");
+    if (read_ptr) register_c_function(env, "read_c", read_ptr, "int", 3, "int", "int", "int");
+    
+    void* write_ptr = dlsym(libc_handle, "write");
+    if (write_ptr) register_c_function(env, "write_c", write_ptr, "int", 3, "int", "int", "int");
+    
+    void* close_ptr = dlsym(libc_handle, "close");
+    if (close_ptr) register_c_function(env, "close_c", close_ptr, "int", 1, "int");
+    
+    void* lseek_ptr = dlsym(libc_handle, "lseek");
+    if (lseek_ptr) register_c_function(env, "lseek_c", lseek_ptr, "int", 3, "int", "int", "int");
+    
+    void* unlink_ptr = dlsym(libc_handle, "unlink");
+    if (unlink_ptr) register_c_function(env, "unlink_c", unlink_ptr, "int", 1, "string");
+    
+    // ============================================
+    // FCNTL FUNCTIONS (fcntl.h)
+    // ============================================
+    
+    void* open_ptr = dlsym(libc_handle, "open");
+    if (open_ptr) register_c_function(env, "open_c", open_ptr, "int", 3, "string", "int", "int");
+    
+    void* creat_ptr = dlsym(libc_handle, "creat");
+    if (creat_ptr) register_c_function(env, "creat_c", creat_ptr, "int", 2, "string", "int");
+    
+    void* fcntl_ptr = dlsym(libc_handle, "fcntl");
+    if (fcntl_ptr) register_c_function(env, "fcntl_c", fcntl_ptr, "int", 3, "int", "int", "int");
+    
+    // ============================================
+    // STAT FUNCTIONS (sys/stat.h)
+    // ============================================
+    
+    void* stat_ptr = dlsym(libc_handle, "stat");
+    if (stat_ptr) register_c_function(env, "stat_c", stat_ptr, "int", 2, "string", "int");
+    
+    void* lstat_ptr = dlsym(libc_handle, "lstat");
+    if (lstat_ptr) register_c_function(env, "lstat_c", lstat_ptr, "int", 2, "string", "int");
+    
+    void* fstat_ptr = dlsym(libc_handle, "fstat");
+    if (fstat_ptr) register_c_function(env, "fstat_c", fstat_ptr, "int", 2, "int", "int");
+    
+    void* chmod_ptr = dlsym(libc_handle, "chmod");
+    if (chmod_ptr) register_c_function(env, "chmod_c", chmod_ptr, "int", 2, "string", "int");
+    
+    void* mkdir_ptr = dlsym(libc_handle, "mkdir");
+    if (mkdir_ptr) register_c_function(env, "mkdir_c", mkdir_ptr, "int", 2, "string", "int");
+    
+    void* rmdir_ptr = dlsym(libc_handle, "rmdir");
+    if (rmdir_ptr) register_c_function(env, "rmdir_c", rmdir_ptr, "int", 1, "string");
+    
+    // ============================================
+    // DLFCN FUNCTIONS (dlfcn.h)
+    // ============================================
+    
+    void* dlopen_ptr = dlsym(libc_handle, "dlopen");
+    if (dlopen_ptr) register_c_function(env, "dlopen_c", dlopen_ptr, "int", 2, "string", "int");
+    
+    void* dlsym_ptr = dlsym(libc_handle, "dlsym");
+    if (dlsym_ptr) register_c_function(env, "dlsym_c", dlsym_ptr, "int", 2, "int", "string");
+    
+    void* dlclose_ptr = dlsym(libc_handle, "dlclose");
+    if (dlclose_ptr) register_c_function(env, "dlclose_c", dlclose_ptr, "int", 1, "int");
+    
+    void* dlerror_ptr = dlsym(libc_handle, "dlerror");
+    if (dlerror_ptr) register_c_function(env, "dlerror_c", dlerror_ptr, "string", 0);
+    
+    // ============================================
+    // SIGNAL FUNCTIONS (signal.h)
+    // ============================================
+    
+    void* signal_ptr = dlsym(libc_handle, "signal");
+    if (signal_ptr) register_c_function(env, "signal_c", signal_ptr, "int", 2, "int", "int");
+    
+    void* raise_ptr = dlsym(libc_handle, "raise");
+    if (raise_ptr) register_c_function(env, "raise_c", raise_ptr, "int", 1, "int");
+    
+    // ============================================
+    // MATH FUNCTIONS (math.h)
+    // ============================================
+    
+    void* sin_ptr = dlsym(libc_handle, "sin");
+    if (sin_ptr) register_c_function(env, "sin_c", sin_ptr, "double", 1, "double");
+    
+    void* cos_ptr = dlsym(libc_handle, "cos");
+    if (cos_ptr) register_c_function(env, "cos_c", cos_ptr, "double", 1, "double");
+    
+    void* tan_ptr = dlsym(libc_handle, "tan");
+    if (tan_ptr) register_c_function(env, "tan_c", tan_ptr, "double", 1, "double");
+    
+    void* sqrt_ptr = dlsym(libc_handle, "sqrt");
+    if (sqrt_ptr) register_c_function(env, "sqrt_c", sqrt_ptr, "double", 1, "double");
+    
+    void* pow_ptr = dlsym(libc_handle, "pow");
+    if (pow_ptr) register_c_function(env, "pow_c", pow_ptr, "double", 2, "double", "double");
+    
+    void* exp_ptr = dlsym(libc_handle, "exp");
+    if (exp_ptr) register_c_function(env, "exp_c", exp_ptr, "double", 1, "double");
+    
+    void* log_ptr = dlsym(libc_handle, "log");
+    if (log_ptr) register_c_function(env, "log_c", log_ptr, "double", 1, "double");
+    
+    void* log10_ptr = dlsym(libc_handle, "log10");
+    if (log10_ptr) register_c_function(env, "log10_c", log10_ptr, "double", 1, "double");
+    
+    void* fabs_ptr = dlsym(libc_handle, "fabs");
+    if (fabs_ptr) register_c_function(env, "fabs_c", fabs_ptr, "double", 1, "double");
+    
+    void* ceil_ptr = dlsym(libc_handle, "ceil");
+    if (ceil_ptr) register_c_function(env, "ceil_c", ceil_ptr, "double", 1, "double");
+    
+    void* floor_ptr = dlsym(libc_handle, "floor");
+    if (floor_ptr) register_c_function(env, "floor_c", floor_ptr, "double", 1, "double");
+    
+    // ============================================
+    // CTYPE FUNCTIONS (ctype.h)
+    // ============================================
+    
+    void* isalnum_ptr = dlsym(libc_handle, "isalnum");
+    if (isalnum_ptr) register_c_function(env, "isalnum_c", isalnum_ptr, "int", 1, "int");
+    
+    void* isalpha_ptr = dlsym(libc_handle, "isalpha");
+    if (isalpha_ptr) register_c_function(env, "isalpha_c", isalpha_ptr, "int", 1, "int");
+    
+    void* isdigit_ptr = dlsym(libc_handle, "isdigit");
+    if (isdigit_ptr) register_c_function(env, "isdigit_c", isdigit_ptr, "int", 1, "int");
+    
+    void* isspace_ptr = dlsym(libc_handle, "isspace");
+    if (isspace_ptr) register_c_function(env, "isspace_c", isspace_ptr, "int", 1, "int");
+    
+    void* isupper_ptr = dlsym(libc_handle, "isupper");
+    if (isupper_ptr) register_c_function(env, "isupper_c", isupper_ptr, "int", 1, "int");
+    
+    void* islower_ptr = dlsym(libc_handle, "islower");
+    if (islower_ptr) register_c_function(env, "islower_c", islower_ptr, "int", 1, "int");
+    
+    void* toupper_ptr = dlsym(libc_handle, "toupper");
+    if (toupper_ptr) register_c_function(env, "toupper_c", toupper_ptr, "int", 1, "int");
+    
+    void* tolower_ptr = dlsym(libc_handle, "tolower");
+    if (tolower_ptr) register_c_function(env, "tolower_c", tolower_ptr, "int", 1, "int");
+    
+    // ============================================
+    // SOCKET FUNCTIONS (sys/socket.h)
+    // ============================================
+    
+    void* socket_ptr = dlsym(libc_handle, "socket");
+    if (socket_ptr) register_c_function(env, "socket_c", socket_ptr, "int", 3, "int", "int", "int");
+    
+    void* bind_ptr = dlsym(libc_handle, "bind");
+    if (bind_ptr) register_c_function(env, "bind_c", bind_ptr, "int", 3, "int", "int", "int");
+    
+    void* listen_ptr = dlsym(libc_handle, "listen");
+    if (listen_ptr) register_c_function(env, "listen_c", listen_ptr, "int", 2, "int", "int");
+    
+    void* accept_ptr = dlsym(libc_handle, "accept");
+    if (accept_ptr) register_c_function(env, "accept_c", accept_ptr, "int", 3, "int", "int", "int");
+    
+    void* connect_ptr = dlsym(libc_handle, "connect");
+    if (connect_ptr) register_c_function(env, "connect_c", connect_ptr, "int", 3, "int", "int", "int");
+    
+    void* send_ptr = dlsym(libc_handle, "send");
+    if (send_ptr) register_c_function(env, "send_c", send_ptr, "int", 4, "int", "int", "int", "int");
+    
+    void* recv_ptr = dlsym(libc_handle, "recv");
+    if (recv_ptr) register_c_function(env, "recv_c", recv_ptr, "int", 4, "int", "int", "int", "int");
+    
+    // ============================================
+    // PUTS & PUTCHAR (wrapper functions)
+    // ============================================
+    
     Value puts_func;
     puts_func.type = 5;
     puts_func.cfunc_val.func_ptr = (void*)call_puts;
