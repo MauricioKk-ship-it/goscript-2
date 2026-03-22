@@ -998,13 +998,13 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
             evaluate_expr(node->expr_stmt.expr, env);
             return 0;
         }
-        
+        /*
         case NODE_STRUCT_DEF:
         case NODE_ENUM_DEF:
         case NODE_IMPL_DEF:
             // Les définitions sont enregistrées au niveau global, rien à exécuter
             return 0;
-        
+        */
         default:
             return 0;
     }
