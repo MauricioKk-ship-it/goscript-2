@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     }
     
     int parse_result = yyparse();
-    fclose(yyin);
+    fclose(yyin); 
     
     if (parse_result != 0 || !program_root) {
         fprintf(stderr, "Error: Parsing failed\n");
@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     }
     
     if (debug_mode) {
-        printf("\n=== AST ===\n");
+        printf("\n===( AST )===\n");
         print_ast(program_root, 0);
         printf("\n");
     }
@@ -79,11 +79,6 @@ void print_ast(ASTNode* node, int depth) {
             }
             break;
             
-        case NODE_IMPORT:
-            printf("Import: %s", node->import.path);
-            if (node->import.alias) printf(" as %s", node->import.alias);
-            printf("\n");
-            break;
             
         case NODE_MODULE:
             printf("Module: %s\n", node->module.name);
@@ -153,11 +148,22 @@ void print_ast(ASTNode* node, int depth) {
             printf(".%s\n", node->member.member);
             break;
            
+        
         case NODE_STATIC_ACCESS:
-            printf("StaticAccess: ");
-            print_ast(node->static_access.object, 0);
-            printf("::%s\n", node->static_access.member);
+    // Affiche l'objet (le module)
+            print_ast(node->member.object, 0); 
+            printf("::%s", node->member.member_name);
             break;
+
+        case NODE_IMPORT:
+            printf("Import: %s", node->import.path);
+   
+            if (node->import.alias) {
+                printf(" as %s", node->import.alias);
+            } 
+            printf("\n");
+            break;
+
             
         case NODE_STRUCT_INIT:
             printf("StructInit: %s\n", node->struct_init.name);
