@@ -106,7 +106,6 @@ void print_value(Value val, int newline);
 // Fonctions d'évaluation
 void init_interpreter(void); 
 int evaluate_statement(ASTNode* node, Environment* env, char* current_file);
-int evaluate_statement(ASTNode* node, Environment* env);
 void interpret_program(ASTNode* program);
 
 #endif
