@@ -2,8 +2,9 @@
 #include <dlfcn.h>
 #include <ffi.h>
 
-
-static char* current_source_file = NULL;
+ extern Value evaluate_expr(ASTNode* node, Environment* env);
+extern int evaluate_statement(ASTNode* node, Environment* env, char* current_file);
+/* static char* current_source_file = NULL; */
 // ==================== GESTION DES IMPLÉMENTATIONS ====================
 
 typedef struct {
@@ -296,23 +297,15 @@ Value call_method(Value* obj, char* method_name, ASTNodeList* args, Environment*
     
     if (obj->type != 6) return result;
     
-    // Chercher l'implémentation
     ASTNode* impl_node = find_impl(obj->struct_val.struct_name);
-    
     if (!impl_node) return result;
     
-    // Chercher la méthode
     ASTNode* method = find_method(impl_node, method_name);
-    
     if (!method) return result;
     
-    // Créer l'environnement de la méthode
     Environment* method_env = create_env(env);
-    
-    // Lier self
     env_set(method_env, "self", *obj);
     
-    // Lier les arguments
     if (args) {
         for (int i = 0; i < args->count; i++) {
             Value arg_val = evaluate_expr(args->nodes[i], env);
@@ -323,22 +316,19 @@ Value call_method(Value* obj, char* method_name, ASTNodeList* args, Environment*
         }
     }
     
-    // Exécuter la méthode
     for (int i = 0; i < method->function.body->count; i++) {
         ASTNode* stmt = method->function.body->nodes[i];
         if (stmt->type == NODE_RETURN) {
             result = evaluate_expr(stmt->return_stmt.value, method_env);
             break;
         } else {
-            evaluate_statement(stmt, method_env);
+            evaluate_statement(stmt, method_env, NULL);  // Ajoutez NULL comme current_file
         }
     }
     
     free(method_env);
     return result;
 }
-
-
 
 Value evaluate_expr(ASTNode* node, Environment* env) {
     Value result = {0};
