@@ -8,6 +8,7 @@
 /* Types de nœuds AST */
 typedef enum {
     NODE_PROGRAM,
+    NODE_MUTS,
     NODE_IMPORT,
     NODE_EXPORT,
     NODE_PACKET,
