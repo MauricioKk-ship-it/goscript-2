@@ -14,6 +14,8 @@ extern int evaluate_statement(ASTNode* node, Environment* env);
 extern Value evaluate_expr(ASTNode* node, Environment* env);
 extern void interpret_program(ASTNode* program);
 extern void register_impl(char* struct_name, ASTNode* impl_node);
+extern void env_set(Environment* env, char* name, Value value);
+extern Environment* create_env(Environment* parent);
 
 // ==================== RÉSOLVEUR DE CHEMIN ====================
 
@@ -205,7 +207,7 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         process_constraints(module, constraints);
     }
     
-    // Enregistrer les fonctions
+    // Enregistrer les fonctions du module
     for (int i = 0; i < program_root->program.statements->count; i++) {
         ASTNode* stmt = program_root->program.statements->nodes[i];
         if (stmt->type == NODE_FUNCTION || stmt->type == NODE_PUBLIC_FUNCTION) {
@@ -217,7 +219,7 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         }
     }
     
-    // Enregistrer les constantes
+    // Enregistrer les constantes du module
     for (int i = 0; i < program_root->program.statements->count; i++) {
         ASTNode* stmt = program_root->program.statements->nodes[i];
         if (stmt->type == NODE_CONST) {
@@ -226,7 +228,7 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         }
     }
     
-    // Enregistrer les structures
+    // Enregistrer les structures du module
     for (int i = 0; i < program_root->program.statements->count; i++) {
         ASTNode* stmt = program_root->program.statements->nodes[i];
         if (stmt->type == NODE_STRUCT) {
@@ -239,7 +241,7 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         }
     }
     
-    // Enregistrer les implémentations
+    // Enregistrer les implémentations du module
     for (int i = 0; i < program_root->program.statements->count; i++) {
         ASTNode* stmt = program_root->program.statements->nodes[i];
         if (stmt->type == NODE_IMPL) {
@@ -258,6 +260,44 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
         }
     }
     
-    // Exécuter les expressions racine
+    // Exécuter les expressions à la racine du module
     for (int i = 0; i < program_root->program.statements->count; i++) {
-        ASTNode
+        ASTNode* stmt = program_root->program.statements->nodes[i];
+        if (stmt->type == NODE_EXPR_STMT) {
+            evaluate_statement(stmt, module_env);
+        }
+    }
+    
+    register_module(reg, module);
+    
+    Value module_val;
+    module_val.type = 7;
+    module_val.int_val = (int)module;
+    if (parent_env) {
+        env_set(parent_env, module->module_name, module_val);
+    }
+    
+    free_ast(program_root);
+    program_root = NULL;
+    
+    return module;
+}
+
+// ==================== VÉRIFICATION DES PERMISSIONS ====================
+
+int is_name_allowed(LoadedModule* module, char* name) {
+    if (!module) return 1;
+    if (module->constraints.allowed_count == 0) return 1;
+    
+    for (int i = 0; i < module->constraints.allowed_count; i++) {
+        if (strcmp(module->constraints.allowed_names[i], name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int is_ffi_allowed(LoadedModule* module) {
+    if (!module) return 1;
+    return module->constraints.allow_ffi;
+}
