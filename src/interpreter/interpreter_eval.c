@@ -17,6 +17,29 @@ static ImplEntry* impl_table = NULL;
 static int impl_count = 0;
 static int impl_capacity = 0;
 
+typedef struct NnlContext {
+    char* label;
+    jmp_buf env;
+    Value return_value;
+    struct NnlContext* next;
+} NnlContext;
+
+// Pile de contextes
+static NnlContext* nnl_stack = NULL;
+
+// Fonction pour chercher un contexte
+static NnlContext* find_nnl_context(char* label) {
+    NnlContext* ctx = nnl_stack;
+    while (ctx) {
+        if (strcmp(ctx->label, label) == 0) {
+            return ctx;
+        }
+        ctx = ctx->next;
+    }
+    return NULL;
+}
+
+
 // Enregistrer une implémentation
 void register_impl(char* struct_name, ASTNode* impl_node) {
     if (impl_count >= impl_capacity) {
