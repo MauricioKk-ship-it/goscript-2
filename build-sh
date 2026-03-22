@@ -1,21 +1,12 @@
-
-
-# Générer scanner.c
 flex -o scanner.c src/lexer/scanner.l
-
-# Générer parser.c et parser.h
 bison -d -o parser.c src/parser/parser.y
-
-# Compiler les objets
 gcc -Wall -g -O2 -I./src -I./src/ast -c scanner.c -o scanner.o
 gcc -Wall -g -O2 -I./src -I./src/ast -c parser.c -o parser.o
 gcc -Wall -g -O2 -I./src -I./src/ast -c src/ast/ast.c -o ast.o
 gcc -Wall -g -O2 -I./src -I./src/ast -c src/interpreter/interpreter_env.c -o interpreter_env.o
 gcc -Wall -g -O2 -I./src -I./src/ast -c src/interpreter/interpreter_ffi.c -o interpreter_ffi.o
 gcc -Wall -g -O2 -I./src -I./src/ast -c src/interpreter/interpreter_eval.c -o interpreter_eval.o
-gcc -Wall -g -O2 -I./src -I./src/ast -c src/repl.c -o repl.o
+gcc -Wall -g -O2 -I./src -I./src/ast -c src/interpreter/interpreter_import.c -o interpreter_import.o
 gcc -Wall -g -O2 -I./src -I./src/ast -c src/main.c -o main.o
-
-# Lier l'exécutable
-gcc scanner.o parser.o ast.o interpreter_env.o interpreter_ffi.o interpreter_eval.o repl.o main.o -lm -ldl -lffi -lreadline -o gd
+gcc scanner.o parser.o ast.o interpreter_env.o interpreter_ffi.o interpreter_eval.o interpreter_import.o main.o -lm -ldl -lffi -lreadline -o gd
 
