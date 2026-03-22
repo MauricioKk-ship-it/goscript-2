@@ -92,7 +92,11 @@ void print_ast(ASTNode* node, int depth) {
                 }
             }
             break;
-            
+            case NODE_MUTS:
+    printf("Mutable: %s = ", node->muts_decl.name);
+    if (node->muts_decl.value) print_ast(node->muts_decl.value, 0);
+    printf("\n");
+    break;
         case NODE_IMPL:
             printf("Impl: %s\n", node->impl.name);
             if (node->impl.methods) {
