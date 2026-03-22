@@ -10,6 +10,8 @@ Environment* create_env(Environment* parent) {
 }
 
 void env_set(Environment* env, char* name, Value value) {
+    if (!env) return;  // Protection anti-crash
+    
     for (int i = 0; i < env->var_count; i++) {
         if (strcmp(env->vars[i].name, name) == 0) {
             env->vars[i].value = value;
@@ -28,11 +30,14 @@ void env_set(Environment* env, char* name, Value value) {
 }
 
 Value* env_get(Environment* env, char* name) {
+    if (!env) return NULL;  // Protection anti-crash
+    
     for (int i = 0; i < env->var_count; i++) {
-        if (strcmp(env->vars[i].name, name) == 0) {
+        if (env->vars[i].name && strcmp(env->vars[i].name, name) == 0) {
             return &env->vars[i].value;
         }
     }
+    
     if (env->parent) {
         return env_get(env->parent, name);
     }
