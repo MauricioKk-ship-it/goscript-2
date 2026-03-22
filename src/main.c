@@ -152,7 +152,7 @@ void print_ast(ASTNode* node, int depth) {
             print_ast(node->member.object, 0);
             printf(".%s\n", node->member.member);
             break;
-            
+           
         case NODE_STATIC_ACCESS:
             printf("StaticAccess: ");
             print_ast(node->static_access.object, 0);
