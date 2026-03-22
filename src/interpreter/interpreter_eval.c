@@ -824,6 +824,39 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
     // NE PAS imprimer ici - laissons le caller s'en charge
          return 1;  // 1 = return encountered 
       }
+        // Dans evaluate_statement, ajoute :
+
+case NODE_UNSAFE:
+    for (int i = 0; i < node->unsafe_block.body->count; i++) {
+        int ret = evaluate_statement(node->unsafe_block.body->nodes[i], env, current_file);
+        if (ret == 1) return 1;
+        if (ret == 2) return 2;
+    }
+    return 0;
+
+case NODE_MATCH: {
+    Value target = evaluate_expr(node->match_stmt.value, env);
+    for (int i = 0; i < node->match_stmt.cases->count; i++) {
+        ASTNode* case_node = node->match_stmt.cases->nodes[i];
+        if (case_node->type == NODE_MATCH_CASE) {
+            Value pattern = evaluate_expr(case_node->match_case.pattern, env);
+            // Comparaison simple
+            int match = 0;
+            if (target.type == pattern.type) {
+                if (target.type == 0 && target.int_val == pattern.int_val) match = 1;
+                else if (target.type == 1 && target.float_val == pattern.float_val) match = 1;
+                else if (target.type == 2 && strcmp(target.string_val, pattern.string_val) == 0) match = 1;
+                else if (target.type == 3 && target.bool_val == pattern.bool_val) match = 1;
+            }
+            if (match) {
+                Value result = evaluate_expr(case_node->match_case.value, env);
+                // Stocker le résultat ou l'afficher selon le besoin
+                return 0;
+            }
+        }
+    }
+    return 0;
+}
         
         case NODE_IF: {
             Value cond = evaluate_expr(node->if_stmt.condition, env);
