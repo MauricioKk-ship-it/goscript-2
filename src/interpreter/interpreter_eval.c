@@ -845,7 +845,11 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
             }
             return 0;
         }
-        
+        case NODE_MUTS: {
+    Value val = evaluate_expr(node->muts_decl.value, env);
+    env_set(env, node->muts_decl.name, val);
+    return 0;
+        }
         case NODE_LOOP: {
             while (1) {
                 for (int i = 0; i < node->loop_stmt.body->count; i++) {
