@@ -115,6 +115,8 @@ unsafe_stmt:
 statement:
     import_statement
     | export_statement
+    | nnl_statement
+    | jmp_statement
     | module_decl
     | packet_decl
     | function_decl
