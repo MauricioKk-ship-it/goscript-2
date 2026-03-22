@@ -264,7 +264,7 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
     for (int i = 0; i < program_root->program.statements->count; i++) {
         ASTNode* stmt = program_root->program.statements->nodes[i];
         if (stmt->type == NODE_EXPR_STMT) {
-            evaluate_statement(stmt, module_env);
+            evaluate_statement(stmt, module_env, module_path);
         }
     }
     
