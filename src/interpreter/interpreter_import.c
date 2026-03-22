@@ -364,14 +364,16 @@ LoadedModule* load_module(ModuleRegistry* reg, Environment* parent_env,
     FILE* old_yyin = yyin;
     int old_lineno = yylineno;
     
-    yyin = fmemopen(source, size, "r");
-    if (!yyin) {
-        free(source);
-        mod->status = MODULE_STATUS_ERROR;
-        return NULL;
-    }
-    
-    int parse_result = yyparse();
+yyin = fmemopen(source, size, "r");
+if (!yyin) {
+    free(source);
+    mod->status = MODULE_STATUS_ERROR;
+    return NULL;
+}
+
+yylineno = 1;  // Réinitialiser le compteur de lignes pour le module
+
+int parse_result = yyparse();
     fclose(yyin);
     yyin = old_yyin;
     yylineno = old_lineno;
