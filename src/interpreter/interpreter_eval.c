@@ -876,6 +876,12 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
             return 0;
         }
         
+        case NODE_CONST: {
+            Value val = evaluate_expr(node->var_decl.value, env);
+            env_set(env, node->var_decl.name, val);
+            return 0;
+        }
+        
         case NODE_RETURN: {
             Value val = evaluate_expr(node->return_stmt.value, env);
             print_value(val, 1);
@@ -886,11 +892,11 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
             Value cond = evaluate_expr(node->if_stmt.condition, env);
             if (cond.type == 3 && cond.bool_val) {
                 for (int i = 0; i < node->if_stmt.then_branch->count; i++) {
-                    if (evaluate_statement(node->if_stmt.then_branch->nodes[i], env)) return 1;
+                    if (evaluate_statement(node->if_stmt.then_branch->nodes[i], env, current_file)) return 1;
                 }
             } else if (node->if_stmt.else_branch) {
                 for (int i = 0; i < node->if_stmt.else_branch->count; i++) {
-                    if (evaluate_statement(node->if_stmt.else_branch->nodes[i], env)) return 1;
+                    if (evaluate_statement(node->if_stmt.else_branch->nodes[i], env, current_file)) return 1;
                 }
             }
             return 0;
@@ -901,7 +907,7 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
                 Value cond = evaluate_expr(node->while_stmt.condition, env);
                 if (cond.type != 3 || !cond.bool_val) break;
                 for (int i = 0; i < node->while_stmt.body->count; i++) {
-                    if (evaluate_statement(node->while_stmt.body->nodes[i], env)) return 1;
+                    if (evaluate_statement(node->while_stmt.body->nodes[i], env, current_file)) return 1;
                 }
             }
             return 0;
@@ -911,7 +917,7 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
             while (1) {
                 int break_flag = 0;
                 for (int i = 0; i < node->loop_stmt.body->count; i++) {
-                    int ret = evaluate_statement(node->loop_stmt.body->nodes[i], env);
+                    int ret = evaluate_statement(node->loop_stmt.body->nodes[i], env, current_file);
                     if (ret == 1) return 1;
                     if (ret == 2) { break_flag = 1; break; }
                 }
@@ -920,66 +926,97 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
             return 0;
         }
         
-        case NODE_IMPORT: {
-    // Charger le module 
-            LoadedModule* module = load_module(
-                get_module_registry(),
-                env,
-                current_file,  // Vous devez passer le fichier courant
-                node->import.path,
-                node->import.alias,
-                node->import.constraints
-                );
-            break;
-        }
-        
         case NODE_FOR: {
-    // La boucle for a trois parties: init, condition, increment
-    // Structure: for init; condition; increment { body }
-    
-    // 1. Exécuter l'initialisation (déclaration de variable)
+            // Initialisation
             if (node->for_range.start) {
-                evaluate_statement(node->for_range.start, env);
+                evaluate_statement(node->for_range.start, env, current_file);
             }
-    
-    // 2. Boucler tant que la condition est vraie
+            
+            // Boucle
             while (1) {
-        // Vérifier la condition
                 if (node->for_range.end) {
                     Value cond = evaluate_expr(node->for_range.end, env);
-                    if (cond.type != 3 || !cond.bool_val) {
-                        break;  // Condition fausse, sortir de la boucle
-                    }
+                    if (cond.type != 3 || !cond.bool_val) break;
                 }
-        
-        // Exécuter le corps de la boucle
+                
                 for (int i = 0; i < node->for_range.body->count; i++) {
-                    int ret = evaluate_statement(node->for_range.body->nodes[i], env);
-                    if (ret == 1) return 1;  // return
-                    if (ret == 2) {  // break
-                        return 0;
-                    }
+                    int ret = evaluate_statement(node->for_range.body->nodes[i], env, current_file);
+                    if (ret == 1) return 1;
+                    if (ret == 2) return 0;
                 }
-        
-        // 3. Exécuter l'incrémentation
+                
+                // Incrémentation (gérée par l'expression dans la boucle for)
                 if (node->for_range.var) {
-            // Pour l'instant, l'incrémentation est déjà dans le for
-            // format: for i = 0; i < 5; i = i + 1
-            // L'incrémentation est stockée dans node->for_range.start
-            // mais en réalité elle est dans la troisième expression
+                    // L'incrémentation est déjà dans le corps de la boucle
                 }
             }
             return 0;
         }
+        
         case NODE_BREAK:
             return 2;
+        
+        case NODE_CONTINUE:
+            return 3;
+        
+        case NODE_MATCH: {
+            Value val = evaluate_expr(node->match_stmt.value, env);
+            for (int i = 0; i < node->match_stmt.cases->count; i++) {
+                ASTNode* case_node = node->match_stmt.cases->nodes[i];
+                if (case_node->type == NODE_MATCH_CASE) {
+                    Value pattern_val = evaluate_expr(case_node->match_case.pattern, env);
+                    if (val.type == pattern_val.type) {
+                        int match = 0;
+                        if (val.type == 0 && val.int_val == pattern_val.int_val) match = 1;
+                        else if (val.type == 1 && val.float_val == pattern_val.float_val) match = 1;
+                        else if (val.type == 2 && strcmp(val.string_val, pattern_val.string_val) == 0) match = 1;
+                        else if (val.type == 3 && val.bool_val == pattern_val.bool_val) match = 1;
+                        
+                        if (match) {
+                            Value result = evaluate_expr(case_node->match_case.value, env);
+                            print_value(result, 1);
+                            return 0;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        
+        case NODE_IMPORT: {
+            // Version simplifiée pour l'instant
+            printf("Import: %s", node->import.path);
+            if (node->import.alias) printf(" as %s", node->import.alias);
+            printf("\n");
             
+            // Version complète (à décommenter quand load_module est prêt)
+            /*
+            LoadedModule* module = load_module(
+                get_module_registry(),
+                env,
+                current_file,
+                node->import.path,
+                node->import.alias,
+                node->import.constraints
+            );
+            (void)module;
+            */
+            return 0;
+        }
+        
         case NODE_EXPR_STMT: {
             evaluate_expr(node->expr_stmt.expr, env);
             return 0;
         }
         
-        default: return 0;
+        case NODE_STRUCT_DEF:
+        case NODE_ENUM_DEF:
+        case NODE_IMPL_DEF:
+            // Les définitions sont enregistrées au niveau global, rien à exécuter
+            return 0;
+        
+        default:
+            return 0;
     }
 }
 void init_interpreter() {
