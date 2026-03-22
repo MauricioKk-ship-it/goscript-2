@@ -8,6 +8,9 @@
 #include <dlfcn.h>
 #include <ffi.h>
 #include "../ast/ast.h"
+#include <setjmp.h>
+
+typedef struct NnlContext NnlContext;
 
 typedef struct Value {
     int type;
