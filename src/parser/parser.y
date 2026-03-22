@@ -215,16 +215,14 @@ function_decl:
     | TOKEN_PUB TOKEN_FN TOKEN_IDENTIFIER TOKEN_LPAREN param_list TOKEN_RPAREN return_type TOKEN_LBRACE statement_list TOKEN_RBRACE {
         $$ = create_public_function_node($3, $5, $7, $9);
     }
-    // Ajoute cette règle pour les fonctions qui retournent un appel
-    | TOKEN_FN TOKEN_IDENTIFIER TOKEN_LPAREN param_list TOKEN_RPAREN TOKEN_ARROW primary_expr {
-        // Fonction qui retourne directement une expression
+    | TOKEN_FN TOKEN_IDENTIFIER TOKEN_LPAREN param_list TOKEN_RPAREN TOKEN_ARROW expression {
+        // Fonction avec retour direct: fn name() -> expression
         ASTNodeList* body = create_node_list();
         ASTNode* return_stmt = create_return_node($7);
         add_to_node_list(body, return_stmt);
         $$ = create_function_node($2, $4, NULL, body);
     }
     ;
-
 param_list:
     /* empty */ {
         $$ = NULL;
