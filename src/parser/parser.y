@@ -71,6 +71,7 @@ ASTNode* program_root;
          TOKEN_MULTIPLY_ASSIGN TOKEN_DIVIDE_ASSIGN TOKEN_MODULO_ASSIGN
 
 /* Non-terminals */
+%type <node> module_decl
 %type <node> import_constraints import_options
 %type <node_list> name_list
 %type <node> program statement expression block
@@ -108,6 +109,7 @@ statement_list:
 statement:
     import_statement
     | export_statement
+    | module_decl
     | packet_decl
     | function_decl
     | struct_decl
@@ -390,6 +392,13 @@ enum_variants:
     | enum_variants TOKEN_COMMA TOKEN_IDENTIFIER {
         add_to_node_list($1, create_identifier_node($3));
         $$ = $1;
+    }
+    ; 
+
+module_decl:
+    TOKEN_MODULE TOKEN_IDENTIFIER {
+        // Créer un nœud nil pour éviter l'erreur
+        $$ = create_expr_statement(create_nil_node());
     }
     ;
 
