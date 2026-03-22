@@ -120,11 +120,11 @@ typedef struct ASTNode {
     struct ASTNodeList* cases;
 } match_expr;
 
-// Dans l'union ASTNode
+
 /* Non-local jumps */
 struct {
     char* label;
-    struct ASTNode* body;
+    struct ASTNodeList* body;
 } nnl_stmt;
 
 struct {
