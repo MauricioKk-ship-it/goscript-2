@@ -462,7 +462,7 @@ ASTNode* create_method_call_node(ASTNode* object, char* method, ASTNodeList* arg
 /* Tableaux */
 ASTNode* create_array_node(ASTNodeList* elements);
 ASTNode* create_array_type_node(ASTNode* element_type);
-
+ASTNode* create_return_direct_node(ASTNode* expr);
 /* Structures */
 ASTNode* create_struct_node(char* name, ASTNodeList* fields);
 ASTNode* create_struct_init_node(char* name, ASTNodeList* fields);
