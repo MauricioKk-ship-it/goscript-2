@@ -451,7 +451,8 @@ ASTNode* create_packet_node(char* name, ASTNodeList* statements);
 ASTNode* create_function_node(char* name, ASTNodeList* params, ASTNode* return_type, ASTNodeList* body);
 ASTNode* create_public_function_node(char* name, ASTNodeList* params, ASTNode* return_type, ASTNodeList* body);
 ASTNode* create_main_function_node(char* name, ASTNodeList* params, ASTNode* return_type, ASTNodeList* body);
-
+ASTNode* create_nnl_node(char* label, ASTNodeList* body);
+ASTNode* create_jmp_node(char* label, ASTNode* value);
 /* Variables */
 ASTNode* create_let_node(char* name, ASTNode* type, ASTNode* value);
 ASTNode* create_const_node(char* name, ASTNode* value);
