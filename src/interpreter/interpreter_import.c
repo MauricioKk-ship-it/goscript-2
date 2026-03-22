@@ -119,19 +119,54 @@ static void register_export(LoadedModule* mod, const char* symbol, const char* a
 }
 
 // ==================== RÉSOLUTION DE CHEMIN ====================
-
 char* resolve_module_path(char* current_file, char* import_path) {
     char resolved[PATH_MAX];
     
-    // Chemins de recherche
+    // Chemins de recherche pour les modules
     const char* search_paths[] = {
-        "./modules",
-        "./src",
+        "./modules",                      // modules/__builtin__.gjs
+        "./lib",                          // lib/__builtin__.gjs
+        "./src",                          // src/__builtin__.gjs
+        "/proc/goscript/protocole",       // Chemin spécial pour le builtin
         "/usr/local/lib/goscript",
         "/usr/lib/goscript",
-        "./",
+        "./",                             // ./__builtin__.gjs
         NULL
     };
+    
+    // Cas spécial: __builtin__ (module intégré)
+    if (strcmp(import_path, "__builtin__") == 0) {
+        // Vérifier d'abord dans le chemin spécial
+        char special_path[PATH_MAX];
+        snprintf(special_path, PATH_MAX, "/proc/goscript/protocole/__builtin__.gjs");
+        if (access(special_path, F_OK) == 0) {
+            if (realpath(special_path, resolved)) {
+                return strdup(resolved);
+            }
+        }
+        
+        // Sinon chercher dans tous les chemins
+        for (int i = 0; search_paths[i]; i++) {
+            char with_ext[PATH_MAX];
+            snprintf(with_ext, PATH_MAX, "%s/__builtin__.gjs", search_paths[i]);
+            if (access(with_ext, F_OK) == 0) {
+                char real_path[PATH_MAX];
+                if (realpath(with_ext, real_path)) {
+                    return strdup(real_path);
+                }
+            }
+        }
+        
+        // Dernier recours: chercher dans le répertoire courant
+        if (access("__builtin__.gjs", F_OK) == 0) {
+            if (realpath("__builtin__.gjs", resolved)) {
+                return strdup(resolved);
+            }
+        }
+        
+        fprintf(stderr, "Warning: __builtin__.gjs not found in any search path\n");
+        return NULL;
+    }
     
     // 1. Chemin absolu
     if (import_path[0] == '/') {
