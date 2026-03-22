@@ -270,7 +270,7 @@ let_decl:
     ;
 
 const_decl:
-    TOKEN_CN TOKEN_IDENTIFIER TOKEN_ASSIGN expression {
+    TOKEN_CONST TOKEN_IDENTIFIER TOKEN_ASSIGN expression {
         $$ = create_const_node($2, $4);
     }
     | TOKEN_PUB TOKEN_CN TOKEN_IDENTIFIER TOKEN_ASSIGN expression {
