@@ -385,225 +385,243 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                     
                     if (current) {
                         switch (node->binary.op) {
-                            case OP_ADD_ASSIGN:
-                                if (current->type == 0 && right_val.type == 0) {
-                                    new_val.type = 0;
-                                    new_val.int_val = current->int_val + right_val.int_val;
-                                } else if (current->type == 1 && right_val.type == 1) {
-                                    new_val.type = 1;
-                                    new_val.float_val = current->float_val + right_val.float_val;
-                                } else if (current->type == 2 || right_val.type == 2) {
-                                    char buf1[128], buf2[128];
-                                    char* left_str = "";
-                                    char* right_str = "";
-                                    if (current->type == 0) { sprintf(buf1, "%d", current->int_val); left_str = buf1; }
-                                    else if (current->type == 1) { sprintf(buf1, "%f", current->float_val); left_str = buf1; }
-                                    else if (current->type == 2) left_str = current->string_val;
-                                    else if (current->type == 3) left_str = current->bool_val ? "true" : "false";
-                                    if (right_val.type == 0) { sprintf(buf2, "%d", right_val.int_val); right_str = buf2; }
-                                    else if (right_val.type == 1) { sprintf(buf2, "%f", right_val.float_val); right_str = buf2; }
-                                    else if (right_val.type == 2) right_str = right_val.string_val;
-                                    else if (right_val.type == 3) right_str = right_val.bool_val ? "true" : "false";
-                                    new_val.type = 2;
-                                    new_val.string_val = malloc(strlen(left_str) + strlen(right_str) + 1);
-                                    strcpy(new_val.string_val, left_str);
-                                    strcat(new_val.string_val, right_str);
-                                }
-                                break;
-                            case OP_SUB_ASSIGN:
-                                if (current->type == 0 && right_val.type == 0) {
-                                    new_val.type = 0;
-                                    new_val.int_val = current->int_val - right_val.int_val;
-                                } else if (current->type == 1 && right_val.type == 1) {
-                                    new_val.type = 1;
-                                    new_val.float_val = current->float_val - right_val.float_val;
-                                }
-                                break;
-                            case OP_MUL_ASSIGN:
-                                if (current->type == 0 && right_val.type == 0) {
-                                    new_val.type = 0;
-                                    new_val.int_val = current->int_val * right_val.int_val;
-                                } else if (current->type == 1 && right_val.type == 1) {
-                                    new_val.type = 1;
-                                    new_val.float_val = current->float_val * right_val.float_val;
-                                }
-                                break;
-                            case OP_DIV_ASSIGN:
-                                if (current->type == 0 && right_val.type == 0 && right_val.int_val != 0) {
-                                    new_val.type = 0;
-                                    new_val.int_val = current->int_val / right_val.int_val;
-                                } else if (current->type == 1 && right_val.type == 1 && right_val.float_val != 0) {
-                                    new_val.type = 1;
-                                    new_val.float_val = current->float_val / right_val.float_val;
-                                }
-                                break;
-                            case OP_MOD_ASSIGN:
-                                if (current->type == 0 && right_val.type == 0 && right_val.int_val != 0) {
-                                    new_val.type = 0;
-                                    new_val.int_val = current->int_val % right_val.int_val;
-                                }
-                                break;
-                        }
-                        env_set(env, var_name, new_val);
-                        result = new_val;
-                    }
-                }
-                break;
-            }
-            
-            // Assignation simple
-            if (node->binary.op == OP_ASSIGN) {
-                if (node->binary.left->type == NODE_IDENTIFIER) {
-                    char* var_name = node->binary.left->identifier.name;
-                    Value right_val = evaluate_expr(node->binary.right, env);
-                    env_set(env, var_name, right_val);
-                    result = right_val;
-                }
-                break;
-            }
-            
-            // Opérations binaires standard
-            Value left = evaluate_expr(node->binary.left, env);
-            Value right = evaluate_expr(node->binary.right, env);
-            
-            switch (node->binary.op) {
-                case OP_ADD:
-                    if (left.type == 0 && right.type == 0) {
-                        result.type = 0;
-                        result.int_val = left.int_val + right.int_val;
-                    } else if (left.type == 1 && right.type == 1) {
-                        result.type = 1;
-                        result.float_val = left.float_val + right.float_val;
-                    } else if (left.type == 2 || right.type == 2) {
-                        char buf1[128], buf2[128];
-                        char* left_str = "";
-                        char* right_str = "";
-                        if (left.type == 0) { sprintf(buf1, "%d", left.int_val); left_str = buf1; }
-                        else if (left.type == 1) { sprintf(buf1, "%f", left.float_val); left_str = buf1; }
-                        else if (left.type == 2) left_str = left.string_val;
-                        else if (left.type == 3) left_str = left.bool_val ? "true" : "false";
-                        if (right.type == 0) { sprintf(buf2, "%d", right.int_val); right_str = buf2; }
-                        else if (right.type == 1) { sprintf(buf2, "%f", right.float_val); right_str = buf2; }
-                        else if (right.type == 2) right_str = right.string_val;
-                        else if (right.type == 3) right_str = right.bool_val ? "true" : "false";
-                        result.type = 2;
-                        result.string_val = malloc(strlen(left_str) + strlen(right_str) + 1);
-                        strcpy(result.string_val, left_str);
-                        strcat(result.string_val, right_str);
-                    }
-                    break;
-                    
-                case OP_SUB:
-                    if (left.type == 0 && right.type == 0) {
-                        result.type = 0;
-                        result.int_val = left.int_val - right.int_val;
-                    } else if (left.type == 1 && right.type == 1) {
-                        result.type = 1;
-                        result.float_val = left.float_val - right.float_val;
-                    }
-                    break;
-                    
-                case OP_MUL:
-                    if (left.type == 0 && right.type == 0) {
-                        result.type = 0;
-                        result.int_val = left.int_val * right.int_val;
-                    } else if (left.type == 1 && right.type == 1) {
-                        result.type = 1;
-                        result.float_val = left.float_val * right.float_val;
-                    }
-                    break;
-                    
-                case OP_DIV:
-                    if (left.type == 0 && right.type == 0 && right.int_val != 0) {
-                        result.type = 0;
-                        result.int_val = left.int_val / right.int_val;
-                    } else if (left.type == 1 && right.type == 1 && right.float_val != 0) {
-                        result.type = 1;
-                        result.float_val = left.float_val / right.float_val;
-                    }
-                    break;
-                    
-                case OP_MOD:
-                    if (left.type == 0 && right.type == 0 && right.int_val != 0) {
-                        result.type = 0;
-                        result.int_val = left.int_val % right.int_val;
-                    }
-                    break;
-                    
-                case OP_LT:
-                    result.type = 3;
-                    if (left.type == 0 && right.type == 0) result.bool_val = left.int_val < right.int_val;
-                    else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val < right.float_val;
-                    break;
-                    
-                case OP_GT:
-                    result.type = 3;
-                    if (left.type == 0 && right.type == 0) result.bool_val = left.int_val > right.int_val;
-                    else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val > right.float_val;
-                    break;
-                    
-                case OP_LTE:
-                    result.type = 3;
-                    if (left.type == 0 && right.type == 0) result.bool_val = left.int_val <= right.int_val;
-                    else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val <= right.float_val;
-                    break;
-                    
-                case OP_GTE:
-                    result.type = 3;
-                    if (left.type == 0 && right.type == 0) result.bool_val = left.int_val >= right.int_val;
-                    else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val >= right.float_val;
-                    break;
-                    
-                case OP_EQ:
-                    result.type = 3;
-                    if (left.type == 0 && right.type == 0) result.bool_val = left.int_val == right.int_val;
-                    else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val == right.float_val;
-                    else if (left.type == 2 && right.type == 2) result.bool_val = strcmp(left.string_val, right.string_val) == 0;
-                    else if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val == right.bool_val;
-                    break;
-                    
-                case OP_NEQ:
-                    result.type = 3;
-                    if (left.type == 0 && right.type == 0) result.bool_val = left.int_val != right.int_val;
-                    else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val != right.float_val;
-                    break;
-                    
-                case OP_AND:
-                    result.type = 3;
-                    if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val && right.bool_val;
-                    break;
-                    
-                case OP_OR:
-                    result.type = 3;
-                    if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val || right.bool_val;
-                    break;
-                    
-                default:
-                    result.type = 0;
-                    result.int_val = 0;
-                    break;
-            }
-            break;
+    // ==================== OPÉRATIONS ARITHMÉTIQUES ====================
+    case OP_ADD:
+        if (left.type == 0 && right.type == 0) {
+            result.type = 0;
+            result.int_val = left.int_val + right.int_val;
+        } else if (left.type == 1 && right.type == 1) {
+            result.type = 1;
+            result.float_val = left.float_val + right.float_val;
+        } else if (left.type == 2 || right.type == 2) {
+            char buf1[128], buf2[128];
+            char* left_str = "";
+            char* right_str = "";
+            if (left.type == 0) { sprintf(buf1, "%d", left.int_val); left_str = buf1; }
+            else if (left.type == 1) { sprintf(buf1, "%f", left.float_val); left_str = buf1; }
+            else if (left.type == 2) left_str = left.string_val;
+            else if (left.type == 3) left_str = left.bool_val ? "true" : "false";
+            if (right.type == 0) { sprintf(buf2, "%d", right.int_val); right_str = buf2; }
+            else if (right.type == 1) { sprintf(buf2, "%f", right.float_val); right_str = buf2; }
+            else if (right.type == 2) right_str = right.string_val;
+            else if (right.type == 3) right_str = right.bool_val ? "true" : "false";
+            result.type = 2;
+            result.string_val = malloc(strlen(left_str) + strlen(right_str) + 1);
+            strcpy(result.string_val, left_str);
+            strcat(result.string_val, right_str);
         }
+        break;
         
-        case NODE_UNARY_OP: {
-            Value operand = evaluate_expr(node->unary.operand, env);
-            switch (node->unary.op) {
-                case OP_NOT:
-                    result.type = 3;
-                    result.bool_val = !operand.bool_val;
-                    break;
-                case OP_NEG:
-                    if (operand.type == 0) {
-                        result.type = 0;
-                        result.int_val = -operand.int_val;
-                    }
-                    break;
-                default: break;
-            }
-            break;
+    case OP_SUB:
+        if (left.type == 0 && right.type == 0) {
+            result.type = 0;
+            result.int_val = left.int_val - right.int_val;
+        } else if (left.type == 1 && right.type == 1) {
+            result.type = 1;
+            result.float_val = left.float_val - right.float_val;
         }
-
+        break;
+        
+    case OP_MUL:
+        if (left.type == 0 && right.type == 0) {
+            result.type = 0;
+            result.int_val = left.int_val * right.int_val;
+        } else if (left.type == 1 && right.type == 1) {
+            result.type = 1;
+            result.float_val = left.float_val * right.float_val;
+        }
+        break;
+        
+    case OP_DIV:
+        if (left.type == 0 && right.type == 0 && right.int_val != 0) {
+            result.type = 0;
+            result.int_val = left.int_val / right.int_val;
+        } else if (left.type == 1 && right.type == 1 && right.float_val != 0) {
+            result.type = 1;
+            result.float_val = left.float_val / right.float_val;
+        }
+        break;
+        
+    case OP_MOD:
+        if (left.type == 0 && right.type == 0 && right.int_val != 0) {
+            result.type = 0;
+            result.int_val = left.int_val % right.int_val;
+        }
+        break;
+        
+    // ==================== OPÉRATEURS DE COMPARAISON ====================
+    case OP_LT:
+        result.type = 3;
+        if (left.type == 0 && right.type == 0) result.bool_val = left.int_val < right.int_val;
+        else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val < right.float_val;
+        break;
+        
+    case OP_GT:
+        result.type = 3;
+        if (left.type == 0 && right.type == 0) result.bool_val = left.int_val > right.int_val;
+        else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val > right.float_val;
+        break;
+        
+    case OP_LTE:
+        result.type = 3;
+        if (left.type == 0 && right.type == 0) result.bool_val = left.int_val <= right.int_val;
+        else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val <= right.float_val;
+        break;
+        
+    case OP_GTE:
+        result.type = 3;
+        if (left.type == 0 && right.type == 0) result.bool_val = left.int_val >= right.int_val;
+        else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val >= right.float_val;
+        break;
+        
+    case OP_EQ:
+        result.type = 3;
+        if (left.type == 0 && right.type == 0) result.bool_val = left.int_val == right.int_val;
+        else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val == right.float_val;
+        else if (left.type == 2 && right.type == 2) result.bool_val = strcmp(left.string_val, right.string_val) == 0;
+        else if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val == right.bool_val;
+        break;
+        
+    case OP_NEQ:
+        result.type = 3;
+        if (left.type == 0 && right.type == 0) result.bool_val = left.int_val != right.int_val;
+        else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val != right.float_val;
+        break;
+        
+    // ==================== OPÉRATEURS LOGIQUES ====================
+    case OP_AND:
+        result.type = 3;
+        if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val && right.bool_val;
+        break;
+        
+    case OP_OR:
+        result.type = 3;
+        if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val || right.bool_val;
+        break;
+        
+    // ==================== OPÉRATEURS D'ASSIGNATION ====================
+    case OP_ASSIGN:
+        if (node->binary.left->type == NODE_IDENTIFIER) {
+            char* var_name = node->binary.left->identifier.name;
+            Value right_val = evaluate_expr(node->binary.right, env);
+            env_set(env, var_name, right_val);
+            result = right_val;
+        }
+        break;
+        
+    case OP_ADD_ASSIGN:
+        if (node->binary.left->type == NODE_IDENTIFIER) {
+            char* var_name = node->binary.left->identifier.name;
+            Value* current = env_get(env, var_name);
+            Value right_val = evaluate_expr(node->binary.right, env);
+            Value new_val = {0};
+            if (current) {
+                if (current->type == 0 && right_val.type == 0) {
+                    new_val.type = 0;
+                    new_val.int_val = current->int_val + right_val.int_val;
+                } else if (current->type == 1 && right_val.type == 1) {
+                    new_val.type = 1;
+                    new_val.float_val = current->float_val + right_val.float_val;
+                }
+                env_set(env, var_name, new_val);
+                result = new_val;
+            }
+        }
+        break;
+        
+    case OP_SUB_ASSIGN:
+        if (node->binary.left->type == NODE_IDENTIFIER) {
+            char* var_name = node->binary.left->identifier.name;
+            Value* current = env_get(env, var_name);
+            Value right_val = evaluate_expr(node->binary.right, env);
+            Value new_val = {0};
+            if (current) {
+                if (current->type == 0 && right_val.type == 0) {
+                    new_val.type = 0;
+                    new_val.int_val = current->int_val - right_val.int_val;
+                } else if (current->type == 1 && right_val.type == 1) {
+                    new_val.type = 1;
+                    new_val.float_val = current->float_val - right_val.float_val;
+                }
+                env_set(env, var_name, new_val);
+                result = new_val;
+            }
+        }
+        break;
+        
+    case OP_MUL_ASSIGN:
+        if (node->binary.left->type == NODE_IDENTIFIER) {
+            char* var_name = node->binary.left->identifier.name;
+            Value* current = env_get(env, var_name);
+            Value right_val = evaluate_expr(node->binary.right, env);
+            Value new_val = {0};
+            if (current) {
+                if (current->type == 0 && right_val.type == 0) {
+                    new_val.type = 0;
+                    new_val.int_val = current->int_val * right_val.int_val;
+                } else if (current->type == 1 && right_val.type == 1) {
+                    new_val.type = 1;
+                    new_val.float_val = current->float_val * right_val.float_val;
+                }
+                env_set(env, var_name, new_val);
+                result = new_val;
+            }
+        }
+        break;
+        
+    case OP_DIV_ASSIGN:
+        if (node->binary.left->type == NODE_IDENTIFIER) {
+            char* var_name = node->binary.left->identifier.name;
+            Value* current = env_get(env, var_name);
+            Value right_val = evaluate_expr(node->binary.right, env);
+            Value new_val = {0};
+            if (current) {
+                if (current->type == 0 && right_val.type == 0 && right_val.int_val != 0) {
+                    new_val.type = 0;
+                    new_val.int_val = current->int_val / right_val.int_val;
+                } else if (current->type == 1 && right_val.type == 1 && right_val.float_val != 0) {
+                    new_val.type = 1;
+                    new_val.float_val = current->float_val / right_val.float_val;
+                }
+                env_set(env, var_name, new_val);
+                result = new_val;
+            }
+        }
+        break;
+        
+    case OP_MOD_ASSIGN:
+        if (node->binary.left->type == NODE_IDENTIFIER) {
+            char* var_name = node->binary.left->identifier.name;
+            Value* current = env_get(env, var_name);
+            Value right_val = evaluate_expr(node->binary.right, env);
+            Value new_val = {0};
+            if (current) {
+                if (current->type == 0 && right_val.type == 0 && right_val.int_val != 0) {
+                    new_val.type = 0;
+                    new_val.int_val = current->int_val % right_val.int_val;
+                }
+                env_set(env, var_name, new_val);
+                result = new_val;
+            }
+        }
+        break;
+        
+    // ==================== OPÉRATEURS SPÉCIAUX ====================
+    case OP_RANGE:
+        result.type = 0;
+        result.int_val = 0;
+        break;
+        
+    case OP_PIPE:
+        result = evaluate_expr(node->binary.right, env);
+        break;
+        
+    // ==================== OPÉRATEURS NON GÉRÉS ====================
+    default:
+        result.type = 0;
+        result.int_val = 0;
+        break;
+}
         case NODE_IMPL: {
     // Les implémentations sont stockées dans l'environnement global
     // On ne fait rien ici, elles sont déjà enregistrées
