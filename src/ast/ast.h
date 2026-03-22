@@ -114,6 +114,11 @@ typedef struct ASTNode {
     struct ASTNode* target; // l'expression à tester
     struct ASTNodeList* cases;
 } match_expr;
+/* Return struct field */
+struct {
+    char* struct_name;
+    char* field_name;
+} return_struct_field;
 /* Variables mutables */
 struct {
     char* name;
