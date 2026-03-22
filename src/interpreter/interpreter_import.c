@@ -27,8 +27,8 @@ typedef enum {
     MODULE_STATUS_LOADED,
     MODULE_STATUS_ERROR
 } ModuleStatus;
-
-typedef struct GoscriptModule {
+/*
+typedef struct LodedModule {
     char* path;              // Chemin absolu (clé unique)
     char* name;              // Nom du module
     char* alias;             // Alias d'import
@@ -44,10 +44,10 @@ typedef struct GoscriptModule {
         int sandbox;             // Mode sandboxé (1 = activé)
         int allow_ffi;           // 1 = FFI autorisé
     } constraints;
-} GoscriptModule;
-
+} LodedModule;
+*/
 // Registre global des modules
-static GoscriptModule* modules[1024];
+static LodedModule* modules[1024];
 static int module_count = 0;
 static int module_capacity = 1024;
 
@@ -171,7 +171,7 @@ char* resolve_module_path(char* current_file, char* import_path) {
 
 // ==================== GESTION DU CACHE ====================
 
-static GoscriptModule* find_module_by_path(const char* path) {
+static LodedModule* find_module_by_path(const char* path) {
     for (int i = 0; i < module_count; i++) {
         if (modules[i] && modules[i]->path && strcmp(modules[i]->path, path) == 0) {
             return modules[i];
@@ -180,7 +180,7 @@ static GoscriptModule* find_module_by_path(const char* path) {
     return NULL;
 }
 
-static GoscriptModule* find_module_by_name(const char* name) {
+static LodedModule* find_module_by_name(const char* name) {
     for (int i = 0; i < module_count; i++) {
         if (modules[i] && modules[i]->name && strcmp(modules[i]->name, name) == 0) {
             return modules[i];
@@ -189,13 +189,13 @@ static GoscriptModule* find_module_by_name(const char* name) {
     return NULL;
 }
 
-static GoscriptModule* create_module(const char* path, const char* name, const char* alias) {
+static LodedModule* create_module(const char* path, const char* name, const char* alias) {
     if (module_count >= module_capacity) {
         fprintf(stderr, "Module registry full\n");
         return NULL;
     }
     
-    GoscriptModule* mod = malloc(sizeof(GoscriptModule));
+    LodedModule* mod = malloc(sizeof(GoscriptModule));
     if (!mod) return NULL;
     
     mod->path = path ? strdup(path) : NULL;
