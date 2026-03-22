@@ -262,11 +262,22 @@ let_decl:
     | TOKEN_LET TOKEN_IDENTIFIER TOKEN_COLON type TOKEN_ASSIGN expression {
         $$ = create_let_node($2, $4, $6);
     }
+    | TOKEN_PUB TOKEN_LET TOKEN_IDENTIFIER TOKEN_ASSIGN expression {
+        ASTNode* node = create_let_node($3, NULL, $5);
+        node->var_decl.is_public = 1;
+        $$ = node;
+    }
     ;
 
 const_decl:
     TOKEN_CONST TOKEN_IDENTIFIER TOKEN_ASSIGN expression {
         $$ = create_const_node($2, $4);
+    }
+    | TOKEN_PUB TOKEN_CONST TOKEN_IDENTIFIER TOKEN_ASSIGN expression {
+        // Créer une constante publique
+        ASTNode* node = create_const_node($3, $5);
+        node->var_decl.is_public = 1;
+        $$ = node;
     }
     ;
 
