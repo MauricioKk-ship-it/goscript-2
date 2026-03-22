@@ -35,6 +35,21 @@ ASTNode* create_return_direct_node(ASTNode* expr) {
     return create_return_node(expr);
 }
 
+ASTNode* create_nnl_node(char* label, ASTNodeList* body) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_NNL;
+    node->nnl_stmt.label = strdup(label);
+    node->nnl_stmt.body = body;
+    return node;
+}
+
+ASTNode* create_jmp_node(char* label, ASTNode* value) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_JMP;
+    node->jmp_stmt.label = strdup(label);
+    node->jmp_stmt.value = value;
+    return node;
+}
 ASTNodeList* create_arg_list() {
     return create_node_list();
 }
