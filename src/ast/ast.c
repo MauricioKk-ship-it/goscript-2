@@ -22,6 +22,9 @@ void add_to_node_list(ASTNodeList* list, ASTNode* node) {
     }
     list->nodes[list->count++] = node;
 }
+ASTNode* create_return_direct_node(ASTNode* expr) {
+    return create_return_node(expr);
+}
 
 ASTNodeList* create_arg_list() {
     return create_node_list();
