@@ -29,7 +29,7 @@ ASTNode* program_root;
 %token TOKEN_STRUCT TOKEN_ENUM TOKEN_IMPL TOKEN_MATCH TOKEN_TYPE
 %token TOKEN_TRUE TOKEN_FALSE TOKEN_NIL
 %token TOKEN_AS TOKEN_IN TOKEN_FROM TOKEN_PUB
-%token TOKEN_NEW
+%token TOKEN_NEW TOKEN_UNSAFE
 
 /* Tokens - Ajoutez ces lignes */
 %token TOKEN_MODULE TOKEN_ONLY TOKEN_TIMEOUT TOKEN_SANDBOX TOKEN_ALLOW_FFI
@@ -81,7 +81,7 @@ ASTNode* program_root;
 %type <node> struct_decl enum_decl impl_decl match_statement
 %type <node> binary_expr unary_expr primary_expr call_expr
 %type <node> array_expr struct_expr member_access
-%type <node> param type return_type
+%type <node> param type return_type unsafe_stmt
 %type <node> match_case pattern struct_field
 %type <node_list> statement_list argument_list param_list struct_fields enum_variants array_items match_cases function_decl_list struct_init_fields
 %type <node> break_statement
@@ -103,6 +103,11 @@ statement_list:
     | statement_list statement {
         add_to_node_list($1, $2);
         $$ = $1;
+    }
+    ;
+unsafe_stmt:
+    TOKEN_UNSAFE TOKEN_LBRACE statement_list TOKEN_RBRACE {
+        $$ = create_unsafe_node($3);
     }
     ;
 
@@ -318,28 +323,22 @@ loop_statement:
     }
     ;
 
-match_statement:
+match_expr:
     TOKEN_MATCH expression TOKEN_LBRACE match_cases TOKEN_RBRACE {
         $$ = create_match_node($2, $4);
     }
     ;
 
 match_cases:
-    match_case {
-        $$ = create_node_list();
-        add_to_node_list($$, $1);
-    }
-    | match_cases match_case {
-        add_to_node_list($1, $2);
-        $$ = $1;
-    }
+    match_case { $$ = create_node_list(); add_to_node_list($$, $1); }
+    | match_cases match_case { add_to_node_list($1, $2); $$ = $1; }
     ;
 
 match_case:
-    pattern TOKEN_FAT_ARROW expression {
-        $$ = create_match_case_node($1, $3);
-    }
+    expression TOKEN_FAT_ARROW statement { $$ = create_match_case($1, $3); }
+    | TOKEN_UNDERSCORE TOKEN_FAT_ARROW statement { $$ = create_match_case(create_wildcard_node(), $3); }
     ;
+
 
 pattern:
     TOKEN_NUMBER {
