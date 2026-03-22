@@ -136,6 +136,7 @@ typedef struct ASTNode {
             char* name;
             struct ASTNode* var_type;
             struct ASTNode* value;
+            int is_public;
         } var_decl;
         
         /* Conditions */
