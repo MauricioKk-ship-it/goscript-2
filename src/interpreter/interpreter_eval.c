@@ -336,6 +336,26 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
     
     switch (node->type) {
         // ==================== VALEURS LITTÉRALES ====================
+       case NODE_RETURN_STRUCT_FIELD: {
+    // Chercher la structure dans l'environnement
+    char* struct_name = node->return_struct_field.struct_name;
+    char* field_name = node->return_struct_field.field_name;
+    
+    Value* struct_val = env_get(env, struct_name);
+    if (struct_val && struct_val->type == 6) {
+        // Chercher le champ dans la structure
+        for (int i = 0; i < struct_val->struct_val.field_count; i++) {
+            if (struct_val->struct_val.fields[i].name && 
+                strcmp(struct_val->struct_val.fields[i].name, field_name) == 0) {
+                return *struct_val->struct_val.fields[i].value;
+            }
+        }
+    }
+    
+    fprintf(stderr, "Error: Field '%s' not found in struct '%s'\n", 
+            field_name, struct_name);
+    return (Value){.type = 0, .int_val = 0};
+}
         case NODE_NUMBER:
             result.type = 0;
             result.int_val = node->number.value;
@@ -363,14 +383,15 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             
         // ==================== IDENTIFIANT ====================
         case NODE_IDENTIFIER: {
-            Value* val = env_get(env, node->identifier.name);
-            if (val) {
-                result = *val;
-            } else {
-                fprintf(stderr, "Undefined: %s\n", node->identifier.name);
-            }
-            break;
-        }
+    Value* val = env_get(env, node->identifier.name);
+    if (val) {
+        return *val;
+    }
+    // Si ce n'est pas une variable, peut-être que c'est une fonction ?
+    // Les fonctions sont déjà dans l'environnement
+    fprintf(stderr, "Undefined: %s\n", node->identifier.name);
+    return (Value){.type = 0, .int_val = 0};
+}
         
         // ==================== OPÉRATIONS BINAIRES ====================
         case NODE_BINARY_OP: {
