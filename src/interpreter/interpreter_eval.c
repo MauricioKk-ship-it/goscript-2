@@ -647,18 +647,16 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
         // ==================== ACCÈS STATIQUE (MODULE) ====================
         case NODE_STATIC_ACCESS: {
     Value obj = evaluate_expr(node->static_access.object, env);
-    printf("DEBUG: Static access to %s, obj.type = %d\n", node->static_access.member, obj.type);
     
     if (obj.type == 7) {
         LoadedModule* mod = (LoadedModule*)obj.int_val;
-        printf("DEBUG: Module name = %s, env var_count = %d\n", mod->module_name, mod->env->var_count);
         
         Value* val = env_get(mod->env, node->static_access.member);
         if (val) {
-            printf("DEBUG: Found %s in module\n", node->static_access.member);
+            
             return *val;
         }
-        printf("DEBUG: %s NOT found in module\n", node->static_access.member);
+        printf("ERROR: %s NOT found in module\n", node->static_access.member);
     }
     return (Value){.type = 0};
 }
@@ -812,11 +810,11 @@ int evaluate_statement(ASTNode* node, Environment* env, char* current_file) {
         }
         
         case NODE_CONST:
-    printf("DEBUG: Evaluating const %s\n", node->var_decl.name);
+    
     Value val = evaluate_expr(node->var_decl.value, env);
     env_set(env, node->var_decl.name, val);
     if (node->var_decl.is_public) {
-        printf("DEBUG: Const %s is public\n", node->var_decl.name);
+        
     }
     return 0;
 
