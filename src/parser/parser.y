@@ -34,6 +34,7 @@ ASTNode* program_root;
 /* Tokens - Ajoutez ces lignes */
 %token TOKEN_MODULE TOKEN_ONLY TOKEN_TIMEOUT TOKEN_SANDBOX TOKEN_ALLOW_FFI
 
+%token TOKEN_EXTENDS
 %token TOKEN_UNDERSCORE
 
 /* Operators */
