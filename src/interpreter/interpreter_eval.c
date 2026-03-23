@@ -1946,7 +1946,7 @@ void interpret_program(ASTNode* program) {
             for (int i = 0; i < builtin->env->var_count; i++) {
                 env_set(global, builtin->env->vars[i].name, builtin->env->vars[i].value);
             }
-        printf("Built-in module loaded successfully");
+        printf("");
         } else {
             fprintf(stderr, "Warning: Could not load built-in module\n");
         }
