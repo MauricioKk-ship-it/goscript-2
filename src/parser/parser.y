@@ -289,6 +289,59 @@ type:
     }
     ;
 
+
+/* Dictionnaire */
+dict_expr:
+    TOKEN_DICT TOKEN_LBRACE dict_entries TOKEN_RBRACE {
+        $$ = create_dict_node($3);
+    }
+    | TOKEN_MAP TOKEN_LBRACE dict_entries TOKEN_RBRACE {
+        $$ = create_dict_node($3);
+    }
+    ;
+
+dict_entries:
+    /* empty */ {
+        $$ = NULL;
+    }
+    | dict_entry_list {
+        $$ = $1;
+    }
+    ;
+
+dict_entry_list:
+    expression TOKEN_FAT_ARROW expression {
+        $$ = create_node_list();
+        ASTNode* pair = create_binary_op($1, OP_ASSIGN, $3);
+        add_to_node_list($$, pair);
+    }
+    | dict_entry_list TOKEN_COMMA expression TOKEN_FAT_ARROW expression {
+        ASTNode* pair = create_binary_op($3, OP_ASSIGN, $5);
+        add_to_node_list($1, pair);
+        $$ = $1;
+    }
+    ;
+
+/* Accès dictionnaire */
+dict_access:
+    primary_expr TOKEN_LBRACKET expression TOKEN_RBRACKET {
+        // Détecter si c'est un accès dictionnaire ou tableau
+        // Par défaut, c'est un accès tableau, mais on peut différencier par le type
+        // Pour l'instant, on crée un nœud d'accès dictionnaire
+        $$ = create_dict_access_node($1, $3);
+    }
+    ;
+
+/* Type dictionnaire */
+dict_type:
+    TOKEN_DICT TOKEN_LT type TOKEN_COMMA type TOKEN_GT {
+        $$ = create_dict_type_node($3, $5);
+    }
+    | TOKEN_MAP TOKEN_LT type TOKEN_COMMA type TOKEN_GT {
+        $$ = create_dict_type_node($3, $5);
+    }
+    ;
+
 return_type:
     /* empty */ {
         $$ = NULL;
