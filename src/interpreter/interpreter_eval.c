@@ -1325,18 +1325,37 @@ case NODE_ARRAY: {
 }
 
 case NODE_ARRAY_ACCESS: {
-    Value arr = evaluate_expr(node->array_access.array, env);
+    Value container = evaluate_expr(node->array_access.array, env);
     Value idx = evaluate_expr(node->array_access.index, env);
     
-    if (arr.type == 8 && idx.type == 0) {
+    // Cas 1: Tableau
+    if (container.type == 8 && idx.type == 0) {
         int index = idx.int_val;
-        if (index >= 0 && index < arr.array_val.count) {
-            return evaluate_expr(arr.array_val.elements->nodes[index], env);
+        if (index >= 0 && index < container.array_val.count) {
+            return evaluate_expr(container.array_val.elements->nodes[index], env);
         }
+    }
+    // Cas 2: Dictionnaire
+    else if (container.type == 10) {
+        for (int i = 0; i < container.dict_val.count; i++) {
+            Value* k = container.dict_val.entries[i].key;
+            int match = 0;
+            if (k->type == idx.type) {
+                if (k->type == 0) match = (k->int_val == idx.int_val);
+                else if (k->type == 1) match = (k->float_val == idx.float_val);
+                else if (k->type == 2) match = (strcmp(k->string_val, idx.string_val) == 0);
+                else if (k->type == 3) match = (k->bool_val == idx.bool_val);
+            }
+            if (match) {
+                // Retourner une COPIE de la valeur
+                return *(container.dict_val.entries[i].value);
+            }
+        }
+        // Clé non trouvée, retourner nil
+        return (Value){.type = 0, .int_val = 0};
     }
     return (Value){.type = 0, .int_val = 0};
 }
-
 case NODE_LAMBDA: {
     Value lambda_val;
     lambda_val.type = 9; // Type lambda
