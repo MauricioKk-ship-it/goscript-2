@@ -1,8 +1,6 @@
 #include "interpreter.h"
 #include <dlfcn.h>
 #include <ffi.h>
-// Définir les types de valeurs
-
 
 extern void register_native_c_functions(Environment* env);
 extern Value evaluate_expr(ASTNode* node, Environment* env);
@@ -1057,9 +1055,8 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
 case NODE_ARRAY: {
     Value arr_val;
     arr_val.type = 8; // TYPE_ARRAY
-    
+    // Allouer un tableau de valeurs
     int count = node->array.elements ? node->array.elements->count : 0;
-    // CORRECTION: Allouer un tableau de Value
     Value* elements = malloc(count * sizeof(Value));
     
     for (int i = 0; i < count; i++) {
@@ -1078,14 +1075,13 @@ case NODE_ARRAY_ACCESS: {
     if (arr.type == 8 && idx.type == 0) {
         int index = idx.int_val;
         if (index >= 0 && index < arr.array_val.count) {
-            // CORRECTION: Retourner la valeur stockée
             return arr.array_val.elements[index];
         } else {
             fprintf(stderr, "Index out of bounds: %d\n", index);
         }
     }
     return (Value){.type = 0, .int_val = 0};
-}    
+}
 
 case NODE_LAMBDA: {
     Value lambda_val;
