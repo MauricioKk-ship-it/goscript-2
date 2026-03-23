@@ -122,8 +122,18 @@ typedef struct ASTNode {
     struct ASTNode* target; // l'expression à tester
     struct ASTNodeList* cases;
 } match_expr;
+/* Lambda function */
+struct {
+    ASTNodeList* params;
+    ASTNodeList* body;
+    Environment* closure;
+} lambda;
 
-
+/* Array access */
+struct {
+    struct ASTNode* array;
+    struct ASTNode* index;
+} array_access;
 /* Non-local jumps */
 struct {
     char* label;
