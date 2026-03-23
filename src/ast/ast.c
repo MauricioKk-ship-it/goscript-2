@@ -131,6 +131,22 @@ ASTNode* create_export_node(char* name) {
     return node;
 }
 
+ASTNode* create_lambda_node(ASTNodeList* params, ASTNodeList* body) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_LAMBDA;
+    node->lambda.params = params;
+    node->lambda.body = body;
+    node->lambda.closure = NULL;
+    return node;
+}
+
+ASTNode* create_array_access_node(ASTNode* array, ASTNode* index) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_ARRAY_ACCESS;
+    node->array_access.array = array;
+    node->array_access.index = index;
+    return node;
+}
 ASTNode* create_packet_node(char* name, ASTNodeList* statements) {
     ASTNode* node = malloc(sizeof(ASTNode));
     node->type = NODE_PACKET;
