@@ -51,6 +51,8 @@ void yyerror(const char* msg);
 "sandbox"               { return TOKEN_SANDBOX; }
 "security"              { return TOKEN_SECURITY; }
 "extends"               { return TOKEN_EXTENDS; }
+"dict"                  { return TOKEN_DICT; }
+"map"                   { return TOKEN_MAP; }
 "timeout"               { return TOKEN_TIMEOUT; }
 "muts"                  { return TOKEN_MUTS; }
 "unsafe"                { return TOKEN_UNSAFE; }
