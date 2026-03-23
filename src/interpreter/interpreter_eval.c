@@ -888,18 +888,18 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             env_set(env, var_name, right_val);
             result = right_val;
         }
-        // Cas 2: Assignation à un élément de tableau (a[2] = 99)
+        // Cas 2: Assignation à un élément de tableau/dictionnaire
         else if (node->binary.left->type == NODE_ARRAY_ACCESS) {
             ASTNode* array_access = node->binary.left;
-            Value array_val = evaluate_expr(array_access->array_access.array, env);
-            Value index_val = evaluate_expr(array_access->array_access.index, env);
+            Value container = evaluate_expr(array_access->array_access.array, env);
+            Value idx = evaluate_expr(array_access->array_access.index, env);
             Value right_val = evaluate_expr(node->binary.right, env);
             
-            if (array_val.type == 8 && index_val.type == 0) {
-                int index = index_val.int_val;
-                if (index >= 0 && index < array_val.array_val.count) {
-                    // Modifier l'élément du tableau en fonction du type
-                    ASTNode* element = array_val.array_val.elements->nodes[index];
+            // Cas 2a: Tableau
+            if (container.type == 8 && idx.type == 0) {
+                int index = idx.int_val;
+                if (index >= 0 && index < container.array_val.count) {
+                    ASTNode* element = container.array_val.elements->nodes[index];
                     if (element->type == NODE_NUMBER) {
                         element->number.value = right_val.int_val;
                     } else if (element->type == NODE_STRING) {
@@ -909,69 +909,55 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                         element->float_val.value = right_val.float_val;
                     } else if (element->type == NODE_BOOL) {
                         element->bool_val.value = right_val.bool_val;
-                    } else {
-                        // Pour d'autres types, on ne peut pas modifier facilement
-                        fprintf(stderr, "Warning: Cannot assign to array element of type %d\n", element->type);
                     }
                     result = right_val;
                 } else {
-                    fprintf(stderr, "Error: Index %d out of bounds (size %d)\n", index, array_val.array_val.count);
+                    fprintf(stderr, "Error: Index %d out of bounds (size %d)\n", index, container.array_val.count);
                     result.type = 0;
                     result.int_val = 0;
                 }
-            } else {
-                fprintf(stderr, "Error: Cannot assign to non-array or non-integer index\n");
-                result.type = 0;
-                result.int_val = 0;
+            }
+            // Cas 2b: Dictionnaire
+            else if (container.type == 10) {
+                int found = 0;
+                for (int i = 0; i < container.dict_val.count; i++) {
+                    Value* k = container.dict_val.entries[i].key;
+                    int match = 0;
+                    if (k->type == idx.type) {
+                        if (k->type == 0) match = (k->int_val == idx.int_val);
+                        else if (k->type == 1) match = (k->float_val == idx.float_val);
+                        else if (k->type == 2) match = (strcmp(k->string_val, idx.string_val) == 0);
+                        else if (k->type == 3) match = (k->bool_val == idx.bool_val);
+                    }
+                    if (match) {
+                        *(container.dict_val.entries[i].value) = right_val;
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found) {
+                    // Ajouter nouvelle entrée
+                    if (container.dict_val.count >= container.dict_val.capacity) {
+                        container.dict_val.capacity = container.dict_val.capacity == 0 ? 8 : container.dict_val.capacity * 2;
+                        container.dict_val.entries = realloc(container.dict_val.entries,
+                            container.dict_val.capacity * sizeof(*container.dict_val.entries));
+                    }
+                    container.dict_val.entries[container.dict_val.count].key = malloc(sizeof(Value));
+                    container.dict_val.entries[container.dict_val.count].value = malloc(sizeof(Value));
+                    *(container.dict_val.entries[container.dict_val.count].key) = idx;
+                    *(container.dict_val.entries[container.dict_val.count].value) = right_val;
+                    container.dict_val.count++;
+                }
+                result = right_val;
             }
         }
-
-            else if (node->binary.left->type == NODE_DICT_ACCESS) {
-        ASTNode* dict_access = node->binary.left;
-        Value dict_val = evaluate_expr(dict_access->dict_access.dict, env);
-        Value key_val = evaluate_expr(dict_access->dict_access.key, env);
-        Value right_val = evaluate_expr(node->binary.right, env);
-        
-        if (dict_val.type == VALUE_TYPE_DICT) {
-            int found = 0;
-            for (int i = 0; i < dict_val.dict_val.count; i++) {
-                Value* k = dict_val.dict_val.entries[i].key;
-                int match = 0;
-                if (k->type == key_val.type) {
-                    if (k->type == 0) match = (k->int_val == key_val.int_val);
-                    else if (k->type == 1) match = (k->float_val == key_val.float_val);
-                    else if (k->type == 2) match = (strcmp(k->string_val, key_val.string_val) == 0);
-                    else if (k->type == 3) match = (k->bool_val == key_val.bool_val);
-                }
-                if (match) {
-                    *(dict_val.dict_val.entries[i].value) = right_val;
-                    found = 1;
-                    break;
-                }
-            }
-            if (!found) {
-                // Ajouter nouvelle entrée
-                if (dict_val.dict_val.count >= dict_val.dict_val.capacity) {
-                    dict_val.dict_val.capacity = dict_val.dict_val.capacity == 0 ? 8 : dict_val.dict_val.capacity * 2;
-                    dict_val.dict_val.entries = realloc(dict_val.dict_val.entries,
-                        dict_val.dict_val.capacity * sizeof(*dict_val.dict_val.entries));
-                }
-                dict_val.dict_val.entries[dict_val.dict_val.count].key = malloc(sizeof(Value));
-                dict_val.dict_val.entries[dict_val.dict_val.count].value = malloc(sizeof(Value));
-                *(dict_val.dict_val.entries[dict_val.dict_val.count].key) = key_val;
-                *(dict_val.dict_val.entries[dict_val.dict_val.count].value) = right_val;
-                dict_val.dict_val.count++;
-            }
-            result = right_val;
-        }
-    }
-        // Cas 3: Assignation à un membre de structure (obj.field = value)
+        // Cas 3: Assignation à un membre de structure
         else if (node->binary.left->type == NODE_MEMBER_ACCESS) {
             Value obj = evaluate_expr(node->binary.left->member.object, env);
             Value right_val = evaluate_expr(node->binary.right, env);
             char* member_name = node->binary.left->member.member;
             
-            if (obj.type == 6) { // Type struct
+            if (obj.type == 6) {
                 for (int i = 0; i < obj.struct_val.field_count; i++) {
                     if (obj.struct_val.fields[i].name && 
                         strcmp(obj.struct_val.fields[i].name, member_name) == 0) {
@@ -980,10 +966,6 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                         break;
                     }
                 }
-            } else {
-                fprintf(stderr, "Error: Cannot assign to member of non-struct\n");
-                result.type = 0;
-                result.int_val = 0;
             }
         }
         break;
@@ -1001,20 +983,19 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             } else if (left.type == 1 && right.type == 1) {
                 result.type = 1;
                 result.float_val = left.float_val + right.float_val;
-            } else if (left.type == 2 || right.type == 2 || left.type == 8 || right.type == 8) {
+            } else if (left.type == 2 || right.type == 2 || left.type == 8 || right.type == 8 || left.type == 10 || right.type == 10) {
                 // Convertir left en string
                 char buf1[1024], buf2[1024];
                 char* left_str = "";
                 char* right_str = "";
                 int left_alloc = 0, right_alloc = 0;
                 
-                // Gestion de left
+                // ===== Gestion de left =====
                 if (left.type == 0) { sprintf(buf1, "%d", left.int_val); left_str = buf1; }
                 else if (left.type == 1) { sprintf(buf1, "%f", left.float_val); left_str = buf1; }
                 else if (left.type == 2) left_str = left.string_val;
                 else if (left.type == 3) left_str = left.bool_val ? "true" : "false";
                 else if (left.type == 8) {
-                    // Convertir le tableau en string
                     char* temp = malloc(4096);
                     char* ptr = temp;
                     ptr += sprintf(ptr, "[");
@@ -1032,8 +1013,34 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                     left_alloc = 1;
                     free(temp);
                 }
+                else if (left.type == 10) {
+                    char* temp = malloc(4096);
+                    char* ptr = temp;
+                    ptr += sprintf(ptr, "{");
+                    for (int i = 0; i < left.dict_val.count; i++) {
+                        if (i > 0) ptr += sprintf(ptr, ", ");
+                        Value* k = left.dict_val.entries[i].key;
+                        Value* v = left.dict_val.entries[i].value;
+                        
+                        if (k->type == 0) ptr += sprintf(ptr, "%d: ", k->int_val);
+                        else if (k->type == 1) ptr += sprintf(ptr, "%f: ", k->float_val);
+                        else if (k->type == 2) ptr += sprintf(ptr, "%s: ", k->string_val);
+                        else if (k->type == 3) ptr += sprintf(ptr, "%s: ", k->bool_val ? "true" : "false");
+                        else ptr += sprintf(ptr, "?: ");
+                        
+                        if (v->type == 0) ptr += sprintf(ptr, "%d", v->int_val);
+                        else if (v->type == 1) ptr += sprintf(ptr, "%f", v->float_val);
+                        else if (v->type == 2) ptr += sprintf(ptr, "%s", v->string_val);
+                        else if (v->type == 3) ptr += sprintf(ptr, "%s", v->bool_val ? "true" : "false");
+                        else ptr += sprintf(ptr, "?");
+                    }
+                    ptr += sprintf(ptr, "}");
+                    left_str = strdup(temp);
+                    left_alloc = 1;
+                    free(temp);
+                }
                 
-                // Gestion de right
+                // ===== Gestion de right =====
                 if (right.type == 0) { sprintf(buf2, "%d", right.int_val); right_str = buf2; }
                 else if (right.type == 1) { sprintf(buf2, "%f", right.float_val); right_str = buf2; }
                 else if (right.type == 2) right_str = right.string_val;
@@ -1056,13 +1063,38 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                     right_alloc = 1;
                     free(temp);
                 }
+                else if (right.type == 10) {
+                    char* temp = malloc(4096);
+                    char* ptr = temp;
+                    ptr += sprintf(ptr, "{");
+                    for (int i = 0; i < right.dict_val.count; i++) {
+                        if (i > 0) ptr += sprintf(ptr, ", ");
+                        Value* k = right.dict_val.entries[i].key;
+                        Value* v = right.dict_val.entries[i].value;
+                        
+                        if (k->type == 0) ptr += sprintf(ptr, "%d: ", k->int_val);
+                        else if (k->type == 1) ptr += sprintf(ptr, "%f: ", k->float_val);
+                        else if (k->type == 2) ptr += sprintf(ptr, "%s: ", k->string_val);
+                        else if (k->type == 3) ptr += sprintf(ptr, "%s: ", k->bool_val ? "true" : "false");
+                        else ptr += sprintf(ptr, "?: ");
+                        
+                        if (v->type == 0) ptr += sprintf(ptr, "%d", v->int_val);
+                        else if (v->type == 1) ptr += sprintf(ptr, "%f", v->float_val);
+                        else if (v->type == 2) ptr += sprintf(ptr, "%s", v->string_val);
+                        else if (v->type == 3) ptr += sprintf(ptr, "%s", v->bool_val ? "true" : "false");
+                        else ptr += sprintf(ptr, "?");
+                    }
+                    ptr += sprintf(ptr, "}");
+                    right_str = strdup(temp);
+                    right_alloc = 1;
+                    free(temp);
+                }
                 
                 result.type = 2;
                 result.string_val = malloc(strlen(left_str) + strlen(right_str) + 1);
                 strcpy(result.string_val, left_str);
                 strcat(result.string_val, right_str);
                 
-                // Libérer la mémoire allouée
                 if (left_alloc) free((void*)left_str);
                 if (right_alloc) free((void*)right_str);
             }
@@ -1135,10 +1167,8 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val == right.float_val;
             else if (left.type == 2 && right.type == 2) result.bool_val = strcmp(left.string_val, right.string_val) == 0;
             else if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val == right.bool_val;
-            else if (left.type == 8 && right.type == 8) {
-                // Comparaison de tableaux - comparer les références
-                result.bool_val = (left.array_val.elements == right.array_val.elements);
-            }
+            else if (left.type == 8 && right.type == 8) result.bool_val = (left.array_val.elements == right.array_val.elements);
+            else if (left.type == 10 && right.type == 10) result.bool_val = (left.dict_val.entries == right.dict_val.entries);
             break;
             
         case OP_NEQ:
@@ -1147,9 +1177,6 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             else if (left.type == 1 && right.type == 1) result.bool_val = left.float_val != right.float_val;
             else if (left.type == 2 && right.type == 2) result.bool_val = strcmp(left.string_val, right.string_val) != 0;
             else if (left.type == 3 && right.type == 3) result.bool_val = left.bool_val != right.bool_val;
-            else if (left.type == 8 && right.type == 8) {
-                result.bool_val = (left.array_val.elements != right.array_val.elements);
-            }
             break;
             
         case OP_AND:
@@ -1178,7 +1205,6 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
     }
     break;
 }
-
         case NODE_DICT: {
     result.type = VALUE_TYPE_DICT;
     result.dict_val.entries = NULL;
