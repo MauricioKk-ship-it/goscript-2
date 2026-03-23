@@ -186,11 +186,10 @@ void print_value(Value val, int newline) {
         case 2: printf("%s", val.string_val); break;
         case 3: printf("%s", val.bool_val ? "true" : "false"); break;
         case 8: {
-            // Affichage d'un tableau
+            // Tableau
             printf("[");
             for (int i = 0; i < val.array_val.count; i++) {
                 if (i > 0) printf(", ");
-                // Évaluer l'élément pour obtenir sa valeur
                 Value elem = evaluate_expr(val.array_val.elements->nodes[i], NULL);
                 print_value(elem, 0);
             }
@@ -198,6 +197,18 @@ void print_value(Value val, int newline) {
             break;
         }
         case 9: printf("<lambda>"); break;
+        case 10: {
+            // Dictionnaire
+            printf("{");
+            for (int i = 0; i < val.dict_val.count; i++) {
+                if (i > 0) printf(", ");
+                print_value(*(val.dict_val.entries[i].key), 0);
+                printf(": ");
+                print_value(*(val.dict_val.entries[i].value), 0);
+            }
+            printf("}");
+            break;
+        }
         default: printf("unknown(%d)", val.type);
     }
     if (newline) printf("\n");
