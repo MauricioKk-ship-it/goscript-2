@@ -28,6 +28,7 @@ typedef enum {
     NODE_IF,
     NODE_FOR,
     NODE_FOR_RANGE,
+    NODE_FOR_IN,
     NODE_WHILE,
     NODE_LOOP,
     NODE_BREAK,
