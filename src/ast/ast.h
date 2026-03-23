@@ -11,6 +11,9 @@ struct Environment;
 /* Types de nœuds AST */
 typedef enum {
     NODE_PROGRAM,
+    NODE_DICT,
+    NODE_DICT_ACCESS,
+    NODE_DICT_TYPE,
     NODE_NNL,
     NODE_JMP,
     NODE_NNL_CONTEXT,
@@ -125,6 +128,23 @@ typedef struct ASTNode {
           struct {
            struct ASTNodeList* body;
         } unsafe_block;
+/* Dictionnaire */
+struct {
+    ASTNodeList* entries;  /* Liste de paires clé-valeur */
+} dict;
+
+/* Accès dictionnaire */
+struct {
+    struct ASTNode* dict;
+    struct ASTNode* key;
+} dict_access;
+
+/* Type dictionnaire */
+struct {
+    struct ASTNode* key_type;
+    struct ASTNode* value_type;
+} dict_type;
+
 /* For-in loop */
 struct {
     char* var;
