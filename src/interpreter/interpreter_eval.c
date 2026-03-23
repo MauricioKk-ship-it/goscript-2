@@ -185,19 +185,20 @@ void print_value(Value val, int newline) {
         case 1: printf("%f", val.float_val); break;
         case 2: printf("%s", val.string_val); break;
         case 3: printf("%s", val.bool_val ? "true" : "false"); break;
-        // NOUVEAU : Affichage des tableaux
         case 8: {
+            // Affichage d'un tableau
             printf("[");
             for (int i = 0; i < val.array_val.count; i++) {
                 if (i > 0) printf(", ");
-                // Évaluer et afficher chaque élément
+                // Évaluer l'élément pour obtenir sa valeur
                 Value elem = evaluate_expr(val.array_val.elements->nodes[i], NULL);
                 print_value(elem, 0);
             }
             printf("]");
             break;
         }
-        default: printf("unknown");
+        case 9: printf("<lambda>"); break;
+        default: printf("unknown(%d)", val.type);
     }
     if (newline) printf("\n");
 }
