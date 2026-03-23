@@ -346,6 +346,19 @@ for_statement:
     | TOKEN_FOR expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
         $$ = create_while_node($2, $4);
     }
+    | TOKEN_FOR TOKEN_IDENTIFIER TOKEN_IN expression TOKEN_LBRACE statement_list TOKEN_RBRACE {
+        // for x in array { ... }
+        ASTNode* array_expr = $4;
+        ASTNodeList* body = $6;
+        
+        // Créer un nœud spécial pour for-in
+        ASTNode* node = malloc(sizeof(ASTNode));
+        node->type = NODE_FOR_IN;
+        node->for_in.var = strdup($2);
+        node->for_in.collection = array_expr;
+        node->for_in.body = body;
+        $$ = node;
+    }
     ;
 
 while_statement:
