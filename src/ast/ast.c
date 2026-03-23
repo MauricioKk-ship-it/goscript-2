@@ -73,7 +73,28 @@ ASTNodeList* create_field_list() {
 void add_field(ASTNodeList* list, ASTNode* field) {
     add_to_node_list(list, field);
 }
+ASTNode* create_dict_node(ASTNodeList* entries) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_DICT;
+    node->dict.entries = entries;
+    return node;
+}
 
+ASTNode* create_dict_access_node(ASTNode* dict, ASTNode* key) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_DICT_ACCESS;
+    node->dict_access.dict = dict;
+    node->dict_access.key = key;
+    return node;
+}
+
+ASTNode* create_dict_type_node(ASTNode* key_type, ASTNode* value_type) {
+    ASTNode* node = malloc(sizeof(ASTNode));
+    node->type = NODE_DICT_TYPE;
+    node->dict_type.key_type = key_type;
+    node->dict_type.value_type = value_type;
+    return node;
+}
 ASTNodeList* create_variant_list() {
     return create_node_list();
 }
