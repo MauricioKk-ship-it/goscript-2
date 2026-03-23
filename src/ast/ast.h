@@ -125,6 +125,12 @@ typedef struct ASTNode {
           struct {
            struct ASTNodeList* body;
         } unsafe_block;
+/* For-in loop */
+struct {
+    char* var;
+    struct ASTNode* collection;
+    ASTNodeList* body;
+} for_in;
      struct {
     struct ASTNode* target; // l'expression à tester
     struct ASTNodeList* cases;
