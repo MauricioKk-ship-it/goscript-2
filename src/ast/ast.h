@@ -101,6 +101,40 @@ typedef enum {
     OP_PIPE = 23
 } Operator;
 
+
+
+// Types de données
+typedef enum {
+    TYPE_UNKNOWN = 0,
+    TYPE_INT,
+    TYPE_FLOAT,
+    TYPE_BOOL,
+    TYPE_STRING,
+    TYPE_NIL,
+    TYPE_ARRAY,
+    TYPE_STRUCT,
+    TYPE_FUNCTION,
+    TYPE_LAMBDA,
+    TYPE_ANY,      // Type générique
+    TYPE_OPTIONAL, // Type optionnel (T?)
+    TYPE_UNION,    // Union type
+    TYPE_GENERIC   // Type paramétré
+} DataType;
+
+// Structure pour représenter un type
+typedef struct TypeInfo {
+    DataType kind;
+    struct TypeInfo* element_type;  // Pour les tableaux
+    struct TypeInfo* return_type;   // Pour les fonctions
+    struct TypeInfo** param_types;   // Pour les fonctions
+    int param_count;
+    char* struct_name;               // Pour les structures
+    char* type_var;                  // Pour les types génériques
+    struct TypeInfo* left;           // Pour les unions
+    struct TypeInfo* right;
+    int is_optional;                 // Pour T?
+} TypeInfo;
+
 /* Structure pour les listes de nœuds */
 typedef struct ASTNodeList {
     struct ASTNode** nodes;
@@ -546,6 +580,21 @@ ASTNode* create_public_muts_node(char* name, ASTNode* type, ASTNode* value);
 ASTNode* create_param_node(char* name, ASTNode* type);
 ASTNode* create_field_node(char* name, ASTNode* type);
 ASTNode* create_field_init_node(char* name, ASTNode* value);
+/* TYPES CREATOR COMPLET */
+TypeInfo* create_type_int(void);
+TypeInfo* create_type_float(void);
+TypeInfo* create_type_bool(void);
+TypeInfo* create_type_string(void);
+TypeInfo* create_type_nil(void);
+TypeInfo* create_type_array(TypeInfo* element_type);
+TypeInfo* create_type_struct(char* name);
+TypeInfo* create_type_function(TypeInfo* return_type, TypeInfo** param_types, int param_count);
+TypeInfo* create_type_optional(TypeInfo* base_type);
+TypeInfo* create_type_union(TypeInfo* left, TypeInfo* right);
+TypeInfo* create_type_any(void);
+void free_type(TypeInfo* type);
+int types_equal(TypeInfo* a, TypeInfo* b);
+void print_type(TypeInfo* type);
 
 /* Patterns */
 ASTNode* create_pattern_number(int value);
