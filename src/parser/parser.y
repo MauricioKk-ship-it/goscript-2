@@ -74,6 +74,7 @@ ASTNode* program_root;
 
 /* Non-terminals */
 %type <node> module_decl
+%type <node> continue_statement
 %type <node> import_constraints import_options
 %type <node_list> name_list
 %type <node> program statement expression block
