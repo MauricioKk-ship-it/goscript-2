@@ -27,6 +27,24 @@ typedef struct NnlContext {
 // Pile de contextes
 static NnlContext* nnl_stack = NULL;
 
+
+// ==================== FONCTIONS UTILITAIRES ====================
+
+int values_equal(Value a, Value b) {
+    if (a.type != b.type) return 0;
+    
+    switch (a.type) {
+        case 0: return a.int_val == b.int_val;
+        case 1: return a.float_val == b.float_val;
+        case 2: 
+            if (!a.string_val && !b.string_val) return 1;
+            if (!a.string_val || !b.string_val) return 0;
+            return strcmp(a.string_val, b.string_val) == 0;
+        case 3: return a.bool_val == b.bool_val;
+        default: return 0;
+    }
+}
+
 // Fonction pour chercher un contexte
 static NnlContext* find_nnl_context(char* label) {
     NnlContext* ctx = nnl_stack;
