@@ -13,8 +13,7 @@
 typedef struct NnlContext NnlContext;
 
 typedef struct Value {
-    TypeInfo* type;  // Type de la valeur
-    int type_kind; 
+    int type;
     union {
         int int_val;
         double float_val;
