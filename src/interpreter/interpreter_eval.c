@@ -1575,7 +1575,46 @@ case NODE_JMP: {
             return 2;
         
         case NODE_CONTINUE:
-            return 3;
+            return 2;  // Code pour continue (saut à l'itération suivante)
+
+case NODE_FOR_IN: {
+    // Évaluer la collection (tableau)
+    Value collection = evaluate_expr(node->for_in.collection, env);
+    
+    if (collection.type == 8) {  // Type array
+        for (int idx = 0; idx < collection.array_val.count; idx++) {
+            // Récupérer l'élément courant
+            Value elem = evaluate_expr(collection.array_val.elements->nodes[idx], env);
+            
+            // Créer un environnement pour l'itération
+            Environment* loop_env = create_env(env);
+            env_set(loop_env, node->for_in.var, elem);
+            
+            // Exécuter le corps de la boucle
+            int should_break = 0;
+            for (int i = 0; i < node->for_in.body->count; i++) {
+                int ret = evaluate_statement(node->for_in.body->nodes[i], loop_env, current_file);
+                if (ret == 1) {  // return
+                    free(loop_env);
+                    return 1;
+                }
+                if (ret == 2) {  // continue
+                    break;  // Sortir du corps, passer à l'itération suivante
+                }
+                if (ret == 3) {  // break
+                    should_break = 1;
+                    break;
+                }
+            }
+            free(loop_env);
+            
+            if (should_break) {
+                break;
+            }
+        }
+    }
+    return 0;
+}
         
         case NODE_MATCH: {
             Value target = evaluate_expr(node->match_stmt.value, env);
