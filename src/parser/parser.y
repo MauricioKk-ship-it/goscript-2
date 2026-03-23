@@ -78,6 +78,8 @@ ASTNode* program_root;
 %type <node> continue_statement
 %type <node> import_constraints import_options
 %type <node_list> name_list
+%type <node> dict_expr dict_type
+%type <node_list> dict_entries dict_entry_list
 %type <node> program statement expression block
 %type <node> function_decl let_decl const_decl return_statement
 %type <node> if_statement for_statement while_statement loop_statement
@@ -628,6 +630,8 @@ primary_expr:
         $$ = $2;
     }
     | call_expr
+    | dict_access
+    | dict_expr
     | array_expr
     | struct_expr
     | member_access
