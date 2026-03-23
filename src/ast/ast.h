@@ -13,7 +13,6 @@ typedef enum {
     NODE_NNL_CONTEXT,
     NODE_MUTS,
     NODE_IMPORT,
-    NODE_ARRAY,
     NODE_LAMBDA,
     NODE_ARRAY_ACCESS,
     NODE_EXPORT,
