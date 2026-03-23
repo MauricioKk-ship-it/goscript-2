@@ -914,6 +914,46 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
                 result.int_val = 0;
             }
         }
+
+            else if (node->binary.left->type == NODE_DICT_ACCESS) {
+        ASTNode* dict_access = node->binary.left;
+        Value dict_val = evaluate_expr(dict_access->dict_access.dict, env);
+        Value key_val = evaluate_expr(dict_access->dict_access.key, env);
+        Value right_val = evaluate_expr(node->binary.right, env);
+        
+        if (dict_val.type == VALUE_TYPE_DICT) {
+            int found = 0;
+            for (int i = 0; i < dict_val.dict_val.count; i++) {
+                Value* k = dict_val.dict_val.entries[i].key;
+                int match = 0;
+                if (k->type == key_val.type) {
+                    if (k->type == 0) match = (k->int_val == key_val.int_val);
+                    else if (k->type == 1) match = (k->float_val == key_val.float_val);
+                    else if (k->type == 2) match = (strcmp(k->string_val, key_val.string_val) == 0);
+                    else if (k->type == 3) match = (k->bool_val == key_val.bool_val);
+                }
+                if (match) {
+                    *(dict_val.dict_val.entries[i].value) = right_val;
+                    found = 1;
+                    break;
+                }
+            }
+            if (!found) {
+                // Ajouter nouvelle entrée
+                if (dict_val.dict_val.count >= dict_val.dict_val.capacity) {
+                    dict_val.dict_val.capacity = dict_val.dict_val.capacity == 0 ? 8 : dict_val.dict_val.capacity * 2;
+                    dict_val.dict_val.entries = realloc(dict_val.dict_val.entries,
+                        dict_val.dict_val.capacity * sizeof(*dict_val.dict_val.entries));
+                }
+                dict_val.dict_val.entries[dict_val.dict_val.count].key = malloc(sizeof(Value));
+                dict_val.dict_val.entries[dict_val.dict_val.count].value = malloc(sizeof(Value));
+                *(dict_val.dict_val.entries[dict_val.dict_val.count].key) = key_val;
+                *(dict_val.dict_val.entries[dict_val.dict_val.count].value) = right_val;
+                dict_val.dict_val.count++;
+            }
+            result = right_val;
+        }
+    }
         // Cas 3: Assignation à un membre de structure (obj.field = value)
         else if (node->binary.left->type == NODE_MEMBER_ACCESS) {
             Value obj = evaluate_expr(node->binary.left->member.object, env);
@@ -1127,7 +1167,61 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
     }
     break;
 }
-        
+
+        case NODE_DICT: {
+    result.type = VALUE_TYPE_DICT;
+    result.dict_val.entries = NULL;
+    result.dict_val.count = 0;
+    result.dict_val.capacity = 0;
+    
+    if (node->dict.entries) {
+        for (int i = 0; i < node->dict.entries->count; i++) {
+            ASTNode* pair = node->dict.entries->nodes[i];
+            if (pair->type == NODE_BINARY_OP && pair->binary.op == OP_ASSIGN) {
+                Value key = evaluate_expr(pair->binary.left, env);
+                Value val = evaluate_expr(pair->binary.right, env);
+                
+                // Ajouter au dictionnaire
+                if (result.dict_val.count >= result.dict_val.capacity) {
+                    result.dict_val.capacity = result.dict_val.capacity == 0 ? 8 : result.dict_val.capacity * 2;
+                    result.dict_val.entries = realloc(result.dict_val.entries, 
+                        result.dict_val.capacity * sizeof(*result.dict_val.entries));
+                }
+                
+                result.dict_val.entries[result.dict_val.count].key = malloc(sizeof(Value));
+                result.dict_val.entries[result.dict_val.count].value = malloc(sizeof(Value));
+                *(result.dict_val.entries[result.dict_val.count].key) = key;
+                *(result.dict_val.entries[result.dict_val.count].value) = val;
+                result.dict_val.count++;
+            }
+        }
+    }
+    break;
+}
+
+case NODE_DICT_ACCESS: {
+    Value dict_val = evaluate_expr(node->dict_access.dict, env);
+    Value key_val = evaluate_expr(node->dict_access.key, env);
+    
+    if (dict_val.type == VALUE_TYPE_DICT) {
+        for (int i = 0; i < dict_val.dict_val.count; i++) {
+            Value* k = dict_val.dict_val.entries[i].key;
+            // Comparaison des clés
+            int match = 0;
+            if (k->type == key_val.type) {
+                if (k->type == 0) match = (k->int_val == key_val.int_val);
+                else if (k->type == 1) match = (k->float_val == key_val.float_val);
+                else if (k->type == 2) match = (strcmp(k->string_val, key_val.string_val) == 0);
+                else if (k->type == 3) match = (k->bool_val == key_val.bool_val);
+            }
+            if (match) {
+                result = *(dict_val.dict_val.entries[i].value);
+                break;
+            }
+        }
+    }
+    break;
+}
         // ==================== OPÉRATIONS UNAIRES ====================
         case NODE_UNARY_OP: {
             Value operand = evaluate_expr(node->unary.operand, env);
