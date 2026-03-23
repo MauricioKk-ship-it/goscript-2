@@ -1179,8 +1179,9 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
     break;
 }
 
-        case NODE_DICT: {
-    result.type = VALUE_TYPE_DICT;
+
+case NODE_DICT: {
+    result.type = 10;  // VALUE_TYPE_DICT
     result.dict_val.entries = NULL;
     result.dict_val.count = 0;
     result.dict_val.capacity = 0;
@@ -1191,6 +1192,12 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             if (pair->type == NODE_BINARY_OP && pair->binary.op == OP_ASSIGN) {
                 Value key = evaluate_expr(pair->binary.left, env);
                 Value val = evaluate_expr(pair->binary.right, env);
+                
+                // DEBUG: Afficher ce qui est ajouté
+                printf("DEBUG: Adding entry: ");
+                print_value(key, 0);
+                printf(" => ");
+                print_value(val, 1);
                 
                 // Ajouter au dictionnaire
                 if (result.dict_val.count >= result.dict_val.capacity) {
@@ -1207,31 +1214,49 @@ Value evaluate_expr(ASTNode* node, Environment* env) {
             }
         }
     }
-    break;
-}
-
-case NODE_DICT_ACCESS: {
-    Value dict_val = evaluate_expr(node->dict_access.dict, env);
-    Value key_val = evaluate_expr(node->dict_access.key, env);
     
-    if (dict_val.type == VALUE_TYPE_DICT) {
-        for (int i = 0; i < dict_val.dict_val.count; i++) {
-            Value* k = dict_val.dict_val.entries[i].key;
-            // Comparaison des clés
-            int match = 0;
-            if (k->type == key_val.type) {
-                if (k->type == 0) match = (k->int_val == key_val.int_val);
-                else if (k->type == 1) match = (k->float_val == key_val.float_val);
-                else if (k->type == 2) match = (strcmp(k->string_val, key_val.string_val) == 0);
-                else if (k->type == 3) match = (k->bool_val == key_val.bool_val);
-            }
-            if (match) {
-                result = *(dict_val.dict_val.entries[i].value);
-                break;
-            }
+    // DEBUG: Afficher le résultat
+    printf("DEBUG: Dict created with %d entries\n", result.dict_val.count);
+    break;
+}        
+case NODE_ARRAY_ACCESS: {
+    Value container = evaluate_expr(node->array_access.array, env);
+    Value idx = evaluate_expr(node->array_access.index, env);
+    
+    printf("DEBUG: Array access - container type: %d, idx type: %d\n", container.type, idx.type);
+    
+    // Cas 1: Tableau
+    if (container.type == 8 && idx.type == 0) {
+        int index = idx.int_val;
+        if (index >= 0 && index < container.array_val.count) {
+            return evaluate_expr(container.array_val.elements->nodes[index], env);
         }
     }
-    break;
+    // Cas 2: Dictionnaire
+    else if (container.type == 10) {
+        printf("DEBUG: Looking up in dict with %d entries\n", container.dict_val.count);
+        for (int i = 0; i < container.dict_val.count; i++) {
+            Value* k = container.dict_val.entries[i].key;
+            printf("DEBUG: Comparing key %d: ", i);
+            print_value(*k, 0);
+            printf(" vs ");
+            print_value(idx, 1);
+            
+            int match = 0;
+            if (k->type == idx.type) {
+                if (k->type == 0) match = (k->int_val == idx.int_val);
+                else if (k->type == 1) match = (k->float_val == idx.float_val);
+                else if (k->type == 2) match = (strcmp(k->string_val, idx.string_val) == 0);
+                else if (k->type == 3) match = (k->bool_val == idx.bool_val);
+            }
+            if (match) {
+                printf("DEBUG: Match found!\n");
+                return *(container.dict_val.entries[i].value);
+            }
+        }
+        printf("DEBUG: No match found\n");
+    }
+    return (Value){.type = 0, .int_val = 0};
 }
         // ==================== OPÉRATIONS UNAIRES ====================
         case NODE_UNARY_OP: {
